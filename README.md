@@ -67,7 +67,8 @@ poetry run gh-stats --range year --no-personal --personal-limit 10
 | Flag | Effect | Default |
 | :--- | :--- | :--- |
 | `--range` | Date shorthand (e.g. `today`, `3days`, `week`) | None |
-| `--since` / `--until` | Custom dates (YYYY-MM-DD) | - |
+| `--date-after` / `--date-before` | Check window (YYYYMMDD, now-1week) | - |
+| `--since` / `--until` | Alias for above | - |
 | `--orgs` | Comma-separated organization names | None |
 | `--personal-limit` | Max personal repos to scan | Automatic (based on range) |
 | `--org-limit` | Max repos per organization to scan | Automatic (based on range) |
@@ -75,12 +76,11 @@ poetry run gh-stats --range year --no-personal --personal-limit 10
 
 ### 📅 Advanced Usage
 
-**1. Flexible Date Ranges**
-Natural language support, e.g.:
-- `today`
-- `3days` (last 3 days)
-- `2weeks` (last 2 weeks)
-- `today-5days` (5 days before today)
+**1. Flexible Date Ranges (yt-dlp style)**
+Supports natural language and concise formats:
+- `--range 3days` (last 3 days)
+- `--date-after 20240101` (YYYYMMDD)
+- `--date-before now-2weeks` (relative)
 
 **2. 🌿 Multi-Branch Scanning**
 By default, the tool only counts commits on the default branch (usually `main`).
