@@ -5,7 +5,7 @@ import datetime
 import subprocess
 from collections import defaultdict
 
-from .api import get_current_user, get_user_repos, get_org_repos, get_repo_commits, get_commit_stats
+from .api import get_current_user, get_user_repos, get_org_repos, get_repo_commits, get_commit_stats, get_user_active_branches
 from .ui import Colors, print_styled, print_progress, print_progress_done, render_table
 from .utils import parse_date_range
 
@@ -73,6 +73,13 @@ def main():
         print(f"\r{Colors.RED}[✗]{Colors.ENDC} Error: Run 'gh auth login' first.")
         sys.exit(1)
     print(f"\r{Colors.GREEN}[✔]{Colors.ENDC} Authenticated as: {username}")
+    
+    # Active branches detection (for recent activity)
+    active_branches_map = {}
+    if args.range in ['today', 'week'] or (args.range is None and not args.since):
+        print(f"{Colors.CYAN}[...]{Colors.ENDC} Analyzing recent activity (Events API)...", end="", flush=True)
+        active_branches_map = get_user_active_branches(username)
+        print(f"\r{Colors.GREEN}[✔]{Colors.ENDC} Analyzed activity across {len(active_branches_map)} repos")
 
     # Repos
     repos_to_scan = []
@@ -99,7 +106,11 @@ def main():
     
     for idx, (repo_full_name, repo_name) in enumerate(repos_to_scan):
         print_progress(idx, len(repos_to_scan), repo_full_name, "checking...")
-        commits = get_repo_commits(repo_full_name, username, since_date, until_date)
+        
+        # Determine strict branches to check if we have data
+        target_branches = active_branches_map.get(repo_full_name) # Returns Set or None
+        
+        commits = get_repo_commits(repo_full_name, username, since_date, until_date, target_branches)
         if commits:
             repos_with_commits += 1
             print_progress(idx, len(repos_to_scan), repo_full_name, f"found {len(commits)} commits")
