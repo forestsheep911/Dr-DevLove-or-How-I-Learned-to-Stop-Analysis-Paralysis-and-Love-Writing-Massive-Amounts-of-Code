@@ -1,0 +1,20 @@
+[project]
+name = "gh-stats"
+version = "0.1.0"
+description = "A command-line tool to track GitHub contribution statistics across personal and organization repositories."
+authors = [
+    { name = "bxu" }
+]
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+gh-stats = "gh_stats.main:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+packages = [{include = "gh_stats", from = "src"}]
