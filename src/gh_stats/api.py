@@ -65,8 +65,9 @@ def get_user_active_branches(username):
         if not data: break
         
         for event in data:
+            repo_name = event['repo']['name']
+            
             if event['type'] == 'PushEvent':
-                repo_name = event['repo']['name']
                 # payload.ref looks like 'refs/heads/main' or 'refs/heads/feature-x'
                 ref = event['payload'].get('ref', '')
                 if ref.startswith('refs/heads/'):
@@ -74,6 +75,15 @@ def get_user_active_branches(username):
                     if repo_name not in active_branches:
                         active_branches[repo_name] = set()
                     active_branches[repo_name].add(branch)
+            
+            elif event['type'] == 'CreateEvent':
+                # extensive support for new branches
+                if event['payload'].get('ref_type') == 'branch':
+                    branch = event['payload'].get('ref')
+                    if branch:
+                        if repo_name not in active_branches:
+                            active_branches[repo_name] = set()
+                        active_branches[repo_name].add(branch)
         
         if len(data) < 100: break
         page += 1
