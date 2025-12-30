@@ -30,10 +30,17 @@ def main():
     # Format: (personal_limit, org_limit)
     defaults_map = {
         'today': (4, 8),
+        'yesterday': (4, 8),
+        'thisweek': (8, 16),
         'week': (8, 16),
+        'lastweek': (8, 16),
+        'thismonth': (20, 50),
         'month': (20, 50),
+        'lastmonth': (20, 50),
         'quarter': (30, 80),
-        'year': (50, 100)
+        'thisyear': (50, 100),
+        'year': (50, 100),
+        'lastyear': (50, 100)
     }
     
     # Determine defaults. If range is custom (e.g. '3days'), try to map to closest or default to week-ish?
@@ -121,7 +128,7 @@ def main():
     
     # Active branches detection (for recent activity)
     active_branches_map = {}
-    if args.all_branches and (args.range in ['today', 'week'] or (args.range is None and not args.since)):
+    if args.all_branches and (args.range in ['today', 'yesterday', 'thisweek', 'week'] or (args.range is None and not args.since)):
         print(f"{Colors.CYAN}[...]{Colors.ENDC} Analyzing recent activity (Events API)...", end="", flush=True)
         active_branches_map = get_user_active_branches(username)
         print(f"\r{Colors.GREEN}[✔]{Colors.ENDC} Analyzed activity across {len(active_branches_map)} repos")

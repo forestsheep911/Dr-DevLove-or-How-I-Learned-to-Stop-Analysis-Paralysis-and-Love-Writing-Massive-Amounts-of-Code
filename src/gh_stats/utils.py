@@ -45,18 +45,51 @@ def parse_relative_date(date_str):
 
 def parse_date_range(range_str):
     today = datetime.date.today()
+    
+    # 今天
     if range_str == 'today':
         return today, today
-    elif range_str == 'week':
+    
+    # 昨天
+    elif range_str == 'yesterday':
+        yesterday = today - datetime.timedelta(days=1)
+        return yesterday, yesterday
+    
+    # 本周（从周一到今天）
+    elif range_str in ['thisweek', 'week']:
         start = today - datetime.timedelta(days=today.weekday())
         return start, today
-    elif range_str == 'month':
+    
+    # 上周（上周一到上周日）
+    elif range_str == 'lastweek':
+        last_monday = today - datetime.timedelta(days=today.weekday() + 7)
+        last_sunday = last_monday + datetime.timedelta(days=6)
+        return last_monday, last_sunday
+    
+    # 本月（从本月1号到今天）
+    elif range_str in ['thismonth', 'month']:
         return today.replace(day=1), today
+    
+    # 上月（上月1号到上月最后一天）
+    elif range_str == 'lastmonth':
+        first_of_this_month = today.replace(day=1)
+        last_day_of_last_month = first_of_this_month - datetime.timedelta(days=1)
+        first_of_last_month = last_day_of_last_month.replace(day=1)
+        return first_of_last_month, last_day_of_last_month
+    
+    # 季度
     elif range_str == 'quarter':
         quarter_month = ((today.month - 1) // 3) * 3 + 1
         return today.replace(month=quarter_month, day=1), today
-    elif range_str == 'year':
+    
+    # 本年（从1月1日到今天）
+    elif range_str in ['thisyear', 'year']:
         return today.replace(month=1, day=1), today
+    
+    # 去年（去年1月1日到去年12月31日）
+    elif range_str == 'lastyear':
+        last_year = today.year - 1
+        return datetime.date(last_year, 1, 1), datetime.date(last_year, 12, 31)
     
     # Try parsing as relative date (e.g. "3days")
     try:
