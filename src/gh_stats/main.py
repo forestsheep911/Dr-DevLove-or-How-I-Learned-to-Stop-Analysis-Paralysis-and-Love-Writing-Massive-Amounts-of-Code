@@ -3,6 +3,7 @@ import sys
 import argparse
 import datetime
 import subprocess
+import shutil
 from collections import defaultdict
 
 from .api import get_current_user, get_user_repos, get_org_repos, get_repo_commits, get_commit_stats, get_user_active_branches
@@ -98,8 +99,8 @@ def main():
 
     orgs = [o.strip() for o in args.orgs.split(',') if o.strip()]
 
-    # Check gh
-    if subprocess.call(['which', 'gh'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) != 0:
+    # Check gh (cross-platform)
+    if shutil.which('gh') is None:
         print_styled("Error: 'gh' CLI not installed.", Colors.RED, True)
         sys.exit(1)
 
