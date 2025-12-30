@@ -145,3 +145,11 @@ cython_debug/
 
 # OS X
 .DS_Store
+
+# Project specific
+test_*.py
+test_*.txt
+*_UPDATE.md
+*_FIX.md
+QUICK_REFERENCE.txt
+
