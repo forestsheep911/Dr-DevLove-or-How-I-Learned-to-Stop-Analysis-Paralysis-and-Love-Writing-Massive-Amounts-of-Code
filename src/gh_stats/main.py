@@ -9,6 +9,7 @@ from .ui import Colors, print_styled, render_table
 from .date_parser import parse_date_range, parse_relative_date
 from .discovery import discover_repositories
 from .scanner import scan_repositories
+from .exporter import generate_markdown, write_export_file
 
 def main():
     parser = argparse.ArgumentParser(description="GitHub contribution statistics")
@@ -25,6 +26,7 @@ def main():
     parser.add_argument('--personal-limit', type=int, help='Max personal repos to scan (0=unlimited)')
     parser.add_argument('--org-limit', type=int, help='Max repos per org to scan (0=unlimited)')
     parser.add_argument('--all-branches', action='store_true', help='Scan all active branches (found via Events API) instead of just default branch')
+    parser.add_argument('--export-commits', action='store_true', help='Export commit messages to a Markdown file')
     args = parser.parse_args()
 
     # Remove defaults_map and automatic limit logic
@@ -94,8 +96,15 @@ def main():
         active_branches_map=active_branches_map,
         username=username,
         since_date=since_date,
-        until_date=until_date
+        until_date=until_date,
+        collect_messages=args.export_commits
     )
+
+    if args.export_commits and stats:
+        print_styled("\nGenerating export file...", Colors.CYAN)
+        md_content = generate_markdown(stats, since_date, until_date)
+        filename = write_export_file(md_content, since_date, until_date)
+        print(f"{Colors.GREEN}[✔]{Colors.ENDC} Exported to: {filename}")
 
     # 3. Output Phase
     render_table(stats, since_date, until_date)

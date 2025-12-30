@@ -151,4 +151,6 @@ test_*.txt
 *_UPDATE.md
 *_FIX.md
 QUICK_REFERENCE.txt
+gh_stats_export_*.md
+test_output.txt
 
