@@ -34,8 +34,9 @@ def scan_repositories(repos_to_scan, active_branches_map, username, since_date, 
         commits = get_repo_commits(repo_full_name, username, since_date, until_date, target_branches)
         if commits:
             repos_with_commits += 1
-            print_progress(idx, len(repos_to_scan), repo_full_name, f"found {len(commits)} commits")
-            for commit in commits:
+            total_commits = len(commits)
+            for commit_idx, commit in enumerate(commits, 1):
+                print_progress(idx, len(repos_to_scan), repo_full_name, f"fetching stats {commit_idx}/{total_commits}")
                 stats[repo_full_name]['commits'] += 1
                 added, deleted = get_commit_stats(repo_full_name, commit['sha'])
                 stats[repo_full_name]['added'] += added

@@ -126,6 +126,7 @@ poetry run gh-stats --range thisyear --personal-limit 50
 | `--date-after` / `--date-before` | 自定义起止时间 (YYYYMMDD, now-1week) | - |
 | `--since` / `--until` | 同上 (为了兼容性保留) | - |
 | `--orgs` | 逗号分隔的组织名称 | 无 |
+| `--no-personal` | 排除个人仓库 | - |
 | `--personal-limit` | 扫描的个人仓库上限 | 自动 (根据range) |
 | `--org-limit` | 每个组织扫描的仓库上限 | 自动 (根据range) |
 | `--all-branches` | 启用全分支扫描 (默认只扫主线) | False |

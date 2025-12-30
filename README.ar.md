@@ -55,6 +55,7 @@ poetry run gh-stats --range lastweek --export-commits
 | العلامة | التأثير | الافتراضي |
 | :--- | :--- | :--- |
 | `--range` | اختصار التاريخ (`today`, `lastweek`, `3days`) | لا يوجد |
+| `--no-personal` | استثناء المستودعات الشخصية | - |
 | `--export-commits` | تصدير الرسائل إلى Markdown | False |
 | `--all-branches` | فحص جميع الفروع النشطة | False |
 

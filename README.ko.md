@@ -71,6 +71,7 @@ poetry run gh-stats --range lastweek --export-commits
 | 플래그 | 효과 | 기본값 |
 | :--- | :--- | :--- |
 | `--range` | 날짜 단축어 (`today`, `yesterday`, `lastweek`, `3days` 등) | 없음 |
+| `--no-personal` | 개인 저장소 제외 | - |
 | `--export-commits` | 커밋 메시지를 Markdown으로 내보내기 | False |
 | `--all-branches` | 모든 활성 브랜치 스캔 | False |
 

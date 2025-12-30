@@ -71,6 +71,7 @@ poetry run gh-stats --range lastweek --export-commits
 | フラグ | 効果 | デフォルト |
 | :--- | :--- | :--- |
 | `--range` | 日付の短縮形 (`today`, `yesterday`, `lastweek`, `3days` など) | なし |
+| `--no-personal` | 個人のリポジトリを除外する | - |
 | `--export-commits` | コミットメッセージをMarkdownに出力 | False |
 | `--all-branches` | 全アクティブブランチをスキャン | False |
 

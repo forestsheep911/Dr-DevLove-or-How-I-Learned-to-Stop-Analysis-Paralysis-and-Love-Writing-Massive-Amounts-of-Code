@@ -105,6 +105,7 @@ poetry run gh-stats --range lastweek --export-commits
 | `--date-after` / `--date-before` | 自定義起止時間 (YYYYMMDD, now-1week) | - |
 | `--since` / `--until` | 同上 | - |
 | `--orgs` | 逗號分隔的組織名稱 | 無 |
+| `--no-personal` | 排除個人倉庫 | - |
 | `--personal-limit` | 掃描的個人倉庫上限 | 自動 |
 | `--org-limit` | 每個組織掃描的倉庫上限 | 自動 |
 | `--all-branches` | 啟用全分支掃描 | False |

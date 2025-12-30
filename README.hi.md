@@ -55,6 +55,7 @@ poetry run gh-stats --range lastweek --export-commits
 | फ्लैग | प्रभाव | डिफॉल्ट |
 | :--- | :--- | :--- |
 | `--range` | शॉर्टहैंड (जैसे `today`, `lastweek`, `3days`) | कोई नहीं |
+| `--no-personal` | व्यक्तिगत रिपॉजिटरी को बाहर निकालें | - |
 | `--export-commits` | संदेशों को Markdown में निर्यात करें | False |
 | `--all-branches` | सभी सक्रिय शाखाओं को स्कैन करें | False |
 

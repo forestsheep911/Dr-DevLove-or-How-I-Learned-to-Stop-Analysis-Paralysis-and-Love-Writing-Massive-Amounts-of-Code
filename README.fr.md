@@ -55,6 +55,7 @@ poetry run gh-stats --range lastweek --export-commits
 | Flag | Effet | Défaut |
 | :--- | :--- | :--- |
 | `--range` | Raccourci de date (`today`, `yesterday`, `lastweek`, `3days`) | Aucun |
+| `--no-personal` | Exclure les dépôts personnels | - |
 | `--export-commits` | Exporte les messages en Markdown | False |
 | `--all-branches` | Scanne toutes les branches actives | False |
 

@@ -62,8 +62,8 @@ poetry run gh-stats --range month --orgs YOUR_COMPANY_ORG
 # The "AI Summary Starter" - Export all commit messages from last week
 poetry run gh-stats --range lastweek --export-commits
 
-# The "I'm a 10x Engineer" view (Personal repos only, top 10)
-poetry run gh-stats --range year --no-personal --personal-limit 10
+# The "I'm a 10x Engineer" view (Non-personal repos only, top 10)
+poetry run gh-stats --range year --no-personal --org-limit 10
 ```
 
 ### Parameters
@@ -74,6 +74,7 @@ poetry run gh-stats --range year --no-personal --personal-limit 10
 | `--date-after` / `--date-before` | Check window (YYYYMMDD, now-1week) | - |
 | `--since` / `--until` | Alias for above | - |
 | `--orgs` | Comma-separated organization names | None |
+| `--no-personal` | Exclude personal repositories | - |
 | `--personal-limit` | Max personal repos to scan | Automatic (based on range) |
 | `--org-limit` | Max repos per organization to scan | Automatic (based on range) |
 | `--all-branches` | Enable scanning of all active branches | False (default branch only) |
