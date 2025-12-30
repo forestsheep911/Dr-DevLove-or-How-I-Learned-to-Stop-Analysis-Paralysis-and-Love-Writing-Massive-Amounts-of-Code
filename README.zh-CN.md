@@ -31,14 +31,58 @@
 Dr. DevLove 需要 Python 3.9+ 和 GitHub CLI (`gh`)。
 
 ### 1. 安装依赖
+
+#### macOS / Linux
+
 ```bash
+# 安装 GitHub CLI
 brew install gh
+
+# 认证 GitHub
 gh auth login
-# 组织访问权限（正确诊断所必需）：
+
+# 组织访问权限（正确诊断所必需）
 gh auth refresh -s read:org
 ```
 
-### 2. 服药
+#### Windows
+
+```powershell
+# 安装 GitHub CLI（使用 winget，Windows 10 1709+ 自带）
+winget install --id GitHub.cli
+
+# 或使用 Chocolatey
+# choco install gh
+
+# 或使用 Scoop
+# scoop install gh
+
+# 认证 GitHub
+gh auth login
+
+# 组织访问权限（正确诊断所必需）
+gh auth refresh -s read:org
+```
+
+**注意**: 如果你还没有安装 Python，可以使用以下方式：
+- **Windows**: `winget install Python.Python.3.12` 或从 [python.org](https://www.python.org/downloads/) 下载
+- **macOS**: `brew install python@3.12`
+- **Linux**: 使用系统包管理器（如 `apt install python3`）
+
+### 2. 安装 Poetry
+
+如果尚未安装 Poetry：
+
+```bash
+# Windows (PowerShell)
+(Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -
+
+# macOS / Linux
+curl -sSL https://install.python-poetry.org | python3 -
+```
+
+### 3. 服药
+
 克隆这个名字巨长的仓库并使用 Poetry 安装：
 
 ```bash
@@ -50,6 +94,8 @@ poetry install
 ## 📋 剂量 (使用)
 
 运行工具查看统计。副作用可能包括突如其来的成就感。
+
+**重要**: 命令是 `poetry run gh-stats`（不是 `gh-stats.py`），适用于所有平台（Windows/macOS/Linux）。
 
 ```bash
 # 证明你今天干活了
