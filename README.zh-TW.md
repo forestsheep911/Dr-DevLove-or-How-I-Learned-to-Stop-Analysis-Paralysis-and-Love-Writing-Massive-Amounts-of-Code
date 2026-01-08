@@ -14,7 +14,7 @@
 
 ---
 
-[English](./README.md) | [🇨🇳 简体中文](./README.zh-CN.md) | [🇹🇼 繁體中文](./README.zh-TW.md) | [🇯🇵 日本語](./README.ja.md) | [🇰🇷 한국어](./README.ko.md) | [🇪🇸 Español](./README.es.md) | [🇫🇷 Français](./README.fr.md) | [🇸🇦 العربية](./README.ar.md) | [🇮🇳 हिन्दी](./README.hi.md)
+[English](./README.md) | [🇼 繁體中文](./README.zh-TW.md)
 
 ---
 
@@ -95,12 +95,22 @@ poetry run gh-stats --range thismonth --orgs YOUR_COMPANY_ORG
 
 # AI 總結神器 - 導出上週所有 commit message
 poetry run gh-stats --range lastweek --export-commits
+
+# 導出完整版 commit message（包含正文）到指定檔案
+poetry run gh-stats --range lastweek --export-commits --full-message --output weekly_report
+
+# 圍觀大佬 - 查看其他用戶的公開倉庫活動
+poetry run gh-stats --user torvalds --range thismonth
+
+# 查看同事在組織內的貢獲
+poetry run gh-stats --user colleague_name --orgs YOUR_COMPANY_ORG --range lastweek
 ```
 
 ### 參數
 
 | 標誌 | 效果 | 預設值 |
 | :--- | :--- | :--- |
+| `--user` | 目標 GitHub 用戶名（可查看他人公開倉庫統計，或組合 --orgs 查看同事） | 當前認證用戶 |
 | `--range` | 日期簡寫 (如 `today`, `yesterday`, `thisweek`, `lastweek`, `lastmonth`, `3days`) | 無 |
 | `--date-after` / `--date-before` | 自定義起止時間 (YYYYMMDD, now-1week) | - |
 | `--since` / `--until` | 同上 | - |
@@ -109,7 +119,9 @@ poetry run gh-stats --range lastweek --export-commits
 | `--personal-limit` | 掃描的個人倉庫上限 | 自動 |
 | `--org-limit` | 每個組織掃描的倉庫上限 | 自動 |
 | `--all-branches` | 啟用全分支掃描 | False |
-| `--export-commits` | 導出 Commit Message 到 Markdown 文件 | False |
+| `--export-commits` | 導出 Commit Message 到 Markdown 檔案 | False |
+| `--full-message` | 導出時包含完整的 Commit 正文（預設只導出標題） | False |
+| `--output` / `-o` | 指定導出檔案名（預設儲存到 `reports/` 目錄） | 自動產生 |
 
 ### 📅 高級用法
 
@@ -130,6 +142,27 @@ gh-stats --range 3days --all-branches
 
 ```bash
 gh-stats --range lastweek --export-commits
+```
+
+**4. 👥 查看同事貢獲**
+使用 `--user` 配合 `--orgs` 查看同一組織內同事的工作貢獲。程式會掃描您有權限存取的組織倉庫，篩選出目標用戶的提交。
+
+```bash
+# 查看同事 alice 在 YOUR_COMPANY_ORG 組織內的貢獲
+poetry run gh-stats --user alice --orgs YOUR_COMPANY_ORG --range lastweek --export-commits
+```
+
+**注意**: 當組織倉庫超過 64 個時，程式會詢問您是否全部掃描，或輸入一個數量限制（倉庫按最近更新時間排序）。
+
+**5. 📁 導出檔案管理**
+- 所有導出檔案預設儲存到 `reports/` 目錄
+- 使用 `--output` 可指定自定義檔案名
+- 檔案名衝突時會自動追加序號，不會覆蓋舊檔案
+
+```bash
+# 指定檔案名導出
+poetry run gh-stats --range lastweek --export-commits --output my_weekly_report
+# 輸出: reports/my_weekly_report.md
 ```
 
 ## 📄 授權條款
