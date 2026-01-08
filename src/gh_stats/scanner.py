@@ -56,9 +56,10 @@ def scan_repositories(repos_to_scan, active_branches_map, username, since_date, 
                         try:
                             # python 3.11+ handles Z, earlier needs replace
                             dt = datetime.datetime.fromisoformat(author_date_str.replace('Z', '+00:00'))
-                            date_obj = dt.date()
+                            date_obj = dt
                         except ValueError:
-                            date_obj = since_date # Fallback if parsing fails?
+                            # Fallback: convert since_date (date) to datetime (midnight)
+                            date_obj = datetime.datetime.combine(since_date, datetime.time.min)
                             
                         stats[repo_full_name]['messages'].append({
                             'date': date_obj,

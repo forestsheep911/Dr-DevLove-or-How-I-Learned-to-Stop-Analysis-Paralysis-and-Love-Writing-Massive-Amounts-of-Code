@@ -29,38 +29,108 @@ def print_progress_done(message="Complete"):
     sys.stdout.write(f"\r{Colors.GREEN}[✔]{Colors.ENDC} {message}\033[K\n")
     sys.stdout.flush()
 
-def render_table(stats, since_date, until_date):
+def generate_ascii_table(stats, since_date, until_date, use_colors=True):
     if not stats:
-        print_styled("\nNo commits found in the specified range.", Colors.WARNING)
-        return
+        return "No commits found in the specified range."
 
-    print("\n")
+    lines = []
+    lines.append("")
+    
+    # Helper for color
+    def c(text, color):
+        return f"{color}{text}{Colors.ENDC}" if use_colors else text
+    
+    # Helper to truncate long names with ellipsis in the middle
+    def truncate_middle(s, max_len=50):
+        if len(s) <= max_len:
+            return s
+        # Keep some chars from start and end, put ... in middle
+        keep = (max_len - 3) // 2
+        return s[:keep] + "..." + s[-(max_len - 3 - keep):]
+
     max_repo_len = max(len(r) for r in stats.keys())
-    col_repo = max(max_repo_len + 2, 17)
+    col_repo = min(max(max_repo_len + 2, 17), 52)  # Cap at 52 (50 + padding)
     col_commits = 10
     col_changes = 25
 
-    def print_sep(chars):
-        print(f"{Colors.BLUE}{chars[0]}{chars[1]*col_repo}{chars[2]}{chars[1]*col_commits}{chars[2]}{chars[1]*col_changes}{chars[3]}{Colors.ENDC}")
+    def get_sep(chars):
+        # chars: 0=left, 1=mid, 2=sep, 3=right
+        if use_colors:
+            return f"{Colors.BLUE}{chars[0]}{chars[1]*col_repo}{chars[2]}{chars[1]*col_commits}{chars[2]}{chars[1]*col_changes}{chars[3]}{Colors.ENDC}"
+        else:
+            return f"{chars[0]}{chars[1]*col_repo}{chars[2]}{chars[1]*col_commits}{chars[2]}{chars[1]*col_changes}{chars[3]}"
 
-    print_sep("┌─┬┐")
-    print(f"{Colors.BLUE}│{Colors.ENDC} {Colors.BOLD}{'Repository':<{col_repo-1}}{Colors.ENDC}{Colors.BLUE}│{Colors.ENDC} {Colors.BOLD}{'Commits':<{col_commits-1}}{Colors.ENDC}{Colors.BLUE}│{Colors.ENDC} {Colors.BOLD}{'Changes':<{col_changes-1}}{Colors.ENDC}{Colors.BLUE}│{Colors.ENDC}")
-    print_sep("├─┼┤")
+    lines.append(get_sep("┌─┬┐"))
+    
+    # Header
+    h_repo = c(f"{'Repository':<{col_repo-1}}", Colors.BOLD)
+    h_commits = c(f"{'Commits':<{col_commits-1}}", Colors.BOLD)
+    h_changes = c(f"{'Changes':<{col_changes-1}}", Colors.BOLD)
+    
+    sep_char = c("│", Colors.BLUE)
+    lines.append(f"{sep_char} {h_repo}{sep_char} {h_commits}{sep_char} {h_changes}{sep_char}")
+    lines.append(get_sep("├─┼┤"))
 
     total_commits = total_added = total_deleted = 0
+    
     for repo, data in sorted(stats.items(), key=lambda x: x[1]['commits'], reverse=True):
         total_commits += data['commits']
         total_added += data['added']
         total_deleted += data['deleted']
-        changes_str = f"{Colors.GREEN}+{data['added']}{Colors.ENDC} / {Colors.RED}-{data['deleted']}{Colors.ENDC}"
+        
+        if use_colors:
+            changes_str = f"{Colors.GREEN}+{data['added']}{Colors.ENDC} / {Colors.RED}-{data['deleted']}{Colors.ENDC}"
+        else:
+            changes_str = f"+{data['added']} / -{data['deleted']}"
+            
         visible_len = len(f"+{data['added']} / -{data['deleted']}")
         padding = col_changes - 1 - visible_len
-        print(f"{Colors.BLUE}│{Colors.ENDC} {Colors.CYAN}{repo:<{col_repo-1}}{Colors.ENDC}{Colors.BLUE}│{Colors.ENDC} {str(data['commits']):<{col_commits-1}}{Colors.BLUE}│{Colors.ENDC} {changes_str}{' '*padding}{Colors.BLUE}│{Colors.ENDC}")
+        
+        r_name = c(f"{truncate_middle(repo):<{col_repo-1}}", Colors.CYAN)
+        c_count = f"{str(data['commits']):<{col_commits-1}}"
+        
+        lines.append(f"{sep_char} {r_name}{sep_char} {c_count}{sep_char} {changes_str}{' '*padding}{sep_char}")
 
-    print_sep("└─┴┘")
+    lines.append(get_sep("└─┴┘"))
 
-    print(f"\n{Colors.BOLD}Summary ({since_date} ~ {until_date}):{Colors.ENDC}")
-    print(f"  • Active Projects: {Colors.CYAN}{len(stats)}{Colors.ENDC}")
-    print(f"  • Total Commits:   {Colors.CYAN}{total_commits}{Colors.ENDC}")
-    print(f"  • Total Growth:    {Colors.GREEN}+{total_added}{Colors.ENDC} lines")
-    print(f"  • Total Cleaning:  {Colors.RED}-{total_deleted}{Colors.ENDC} lines")
+    lines.append(f"\n{c(f'Summary ({since_date} ~ {until_date}):', Colors.BOLD)}")
+    lines.append(f"  • Active Projects: {c(len(stats), Colors.CYAN)}")
+    lines.append(f"  • Total Commits:   {c(total_commits, Colors.CYAN)}")
+    lines.append(f"  • Total Growth:    {c(f'+{total_added}', Colors.GREEN)} lines")
+    lines.append(f"  • Total Cleaning:  {c(f'-{total_deleted}', Colors.RED)} lines")
+    
+    return "\n".join(lines)
+
+def render_table(stats, since_date, until_date):
+    print(generate_ascii_table(stats, since_date, until_date, use_colors=True))
+
+def generate_markdown_table(stats, since_date, until_date):
+    """Generate a proper Markdown table for file output."""
+    if not stats:
+        return "No commits found in the specified range."
+
+    lines = []
+    lines.append(f"## Summary ({since_date} ~ {until_date})\n")
+    
+    # Table header
+    lines.append("| Repository | Commits | Changes |")
+    lines.append("|:-----------|--------:|:--------|")
+    
+    total_commits = total_added = total_deleted = 0
+    
+    for repo, data in sorted(stats.items(), key=lambda x: x[1]['commits'], reverse=True):
+        total_commits += data['commits']
+        total_added += data['added']
+        total_deleted += data['deleted']
+        
+        changes_str = f"+{data['added']} / -{data['deleted']}"
+        lines.append(f"| {repo} | {data['commits']} | {changes_str} |")
+
+    lines.append("")
+    lines.append(f"**Totals:**")
+    lines.append(f"- Active Projects: {len(stats)}")
+    lines.append(f"- Total Commits: {total_commits}")
+    lines.append(f"- Lines Added: +{total_added}")
+    lines.append(f"- Lines Deleted: -{total_deleted}")
+    
+    return "\n".join(lines)
