@@ -114,8 +114,14 @@ poetry run gh-stats --range lastweek
 # AI 总结神器 - 导出上周所有 commit message
 poetry run gh-stats --range lastweek --export-commits
 
+# 导出完整版 commit message（包含正文）到指定文件
+poetry run gh-stats --range lastweek --export-commits --full-message --output weekly_report
+
 # 围观大佬 - 查看其他用户的公开仓库活动
 poetry run gh-stats --user torvalds --range thismonth
+
+# 查看同事在组织内的贡献
+poetry run gh-stats --user colleague_name --orgs YOUR_COMPANY_ORG --range lastweek
 
 # "我是 10 倍工程师" 视图 (仅个人仓库，前 50 个)
 poetry run gh-stats --range thisyear --personal-limit 50
@@ -125,7 +131,7 @@ poetry run gh-stats --range thisyear --personal-limit 50
 
 | 标志 | 效果 | 默认值 |
 | :--- | :--- | :--- |
-| `--user` | 目标 GitHub 用户名（可查看他人公开仓库统计） | 当前认证用户 |
+| `--user` | 目标 GitHub 用户名（可查看他人公开仓库统计，或组合 --orgs 查看同事） | 当前认证用户 |
 | `--range` | 日期简写 (如 `today`, `yesterday`, `thisweek`, `lastweek`, `thismonth`, `lastmonth`, `thisyear`, `lastyear`, `3days`) | 无 |
 | `--date-after` / `--date-before` | 自定义起止时间 (YYYYMMDD, now-1week) | - |
 | `--since` / `--until` | 同上 (为了兼容性保留) | - |
@@ -135,6 +141,8 @@ poetry run gh-stats --range thisyear --personal-limit 50
 | `--org-limit` | 每个组织扫描的仓库上限 | 自动 (根据range) |
 | `--all-branches` | 启用全分支扫描 (默认只扫主线) | False |
 | `--export-commits` | 导出 Commit Message 到 Markdown 文件 | False |
+| `--full-message` | 导出时包含完整的 Commit 正文（默认只导出标题） | False |
+| `--output` / `-o` | 指定导出文件名（默认保存到 `reports/` 目录） | 自动生成 |
 
 ### 📅 高级用法
 
@@ -173,6 +181,27 @@ gh-stats --range 3days --all-branches
 
 ```bash
 gh-stats --range lastweek --export-commits
+```
+
+**4. 👥 查看同事贡献**
+使用 `--user` 配合 `--orgs` 查看同一组织内同事的工作贡献。程序会扫描您有权限访问的组织仓库，筛选出目标用户的提交。
+
+```bash
+# 查看同事 alice 在 YOUR_COMPANY_ORG 组织内的贡献
+poetry run gh-stats --user alice --orgs YOUR_COMPANY_ORG --range lastweek --export-commits
+```
+
+**注意**: 当组织仓库超过 64 个时，程序会询问您是否全部扫描，或输入一个数量限制（仓库按最近更新时间排序）。
+
+**5. 📁 导出文件管理**
+- 所有导出文件默认保存到 `reports/` 目录
+- 使用 `--output` 可指定自定义文件名
+- 文件名冲突时会自动追加序号，不会覆盖旧文件
+
+```bash
+# 指定文件名导出
+poetry run gh-stats --range lastweek --export-commits --output my_weekly_report
+# 输出: reports/my_weekly_report.md
 ```
 
 ## 🧪 临床试验

@@ -62,8 +62,14 @@ poetry run gh-stats --range month --orgs YOUR_COMPANY_ORG
 # The "AI Summary Starter" - Export all commit messages from last week
 poetry run gh-stats --range lastweek --export-commits
 
+# Export full commit messages (with body) to a custom file
+poetry run gh-stats --range lastweek --export-commits --full-message --output weekly_report
+
 # Stalk the legends - See another user's public repo activity
 poetry run gh-stats --user torvalds --range thismonth
+
+# See a teammate's contributions in your shared org
+poetry run gh-stats --user colleague --orgs YOUR_COMPANY_ORG --range lastweek
 
 # The "I'm a 10x Engineer" view (Non-personal repos only, top 10)
 poetry run gh-stats --range year --no-personal --org-limit 10
@@ -73,7 +79,7 @@ poetry run gh-stats --range year --no-personal --org-limit 10
 
 | Flag | Effect | Default |
 | :--- | :--- | :--- |
-| `--user` | Target GitHub username (view other users' public repos) | Authenticated user |
+| `--user` | Target GitHub username (view others' public repos, or combine with --orgs for teammates) | Authenticated user |
 | `--range` | Date shorthand (e.g. `today`, `3days`, `week`) | None |
 | `--date-after` / `--date-before` | Check window (YYYYMMDD, now-1week) | - |
 | `--since` / `--until` | Alias for above | - |
@@ -83,6 +89,8 @@ poetry run gh-stats --range year --no-personal --org-limit 10
 | `--org-limit` | Max repos per organization to scan | Automatic (based on range) |
 | `--all-branches` | Enable scanning of all active branches | False (default branch only) |
 | `--export-commits` | Export commit messages to a Markdown file | False |
+| `--full-message` | Include full commit body in export (default: title only) | False |
+| `--output` / `-o` | Specify output filename (defaults to `reports/` directory) | Auto-generated |
 
 ### 📅 Advanced Usage
 
@@ -106,6 +114,27 @@ Need a weekly summary? Use `--export-commits` to generate a Markdown file contai
 
 ```bash
 gh-stats --range lastweek --export-commits
+```
+
+**4. 👥 View Teammate Contributions**
+Use `--user` with `--orgs` to view a colleague's contributions in your shared organization. The tool scans org repos you have access to and filters for the target user's commits.
+
+```bash
+# View colleague alice's contributions in YOUR_COMPANY_ORG
+poetry run gh-stats --user alice --orgs YOUR_COMPANY_ORG --range lastweek --export-commits
+```
+
+**Note**: When org repos exceed 64, you'll be prompted to scan all or enter a limit (repos are sorted by most recently updated).
+
+**5. 📁 Export File Management**
+- All exports are saved to the `reports/` directory by default
+- Use `--output` to specify a custom filename
+- Duplicate filenames get auto-incremented, never overwritten
+
+```bash
+# Export with custom filename
+poetry run gh-stats --range lastweek --export-commits --output my_weekly_report
+# Output: reports/my_weekly_report.md
 ```
 
 ## 🧪 Clinical Trials
