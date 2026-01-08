@@ -42,29 +42,24 @@ def scan_repositories(repos_to_scan, active_branches_map, username, since_date, 
                 stats[repo_full_name]['added'] += added
                 stats[repo_full_name]['deleted'] += deleted
                 
-                if collect_messages:
-                    # Extract date and message
-                    # date format from API: "2023-12-30T12:00:00Z"
-                    commit_data = commit.get('commit', {})
-                    author_date_str = commit_data.get('author', {}).get('date')
-                    message = commit_data.get('message', '')
+                # Always extract date for Active Days stat
+                commit_data = commit.get('commit', {})
+                author_date_str = commit_data.get('author', {}).get('date')
+                
+                if author_date_str:
+                    try:
+                        dt = datetime.datetime.fromisoformat(author_date_str.replace('Z', '+00:00'))
+                        date_obj = dt
+                    except ValueError:
+                        date_obj = datetime.datetime.combine(since_date, datetime.time.min)
                     
-                    if author_date_str:
-                        # Simple parsing, assuming UTC 'Z' or simple ISO
-                        # To keep it robust but simple, let's just use first 10 chars YYYY-MM-DD
-                        # Ideally use datetime.fromisoformat replacing Z
-                        try:
-                            # python 3.11+ handles Z, earlier needs replace
-                            dt = datetime.datetime.fromisoformat(author_date_str.replace('Z', '+00:00'))
-                            date_obj = dt
-                        except ValueError:
-                            # Fallback: convert since_date (date) to datetime (midnight)
-                            date_obj = datetime.datetime.combine(since_date, datetime.time.min)
-                            
-                        stats[repo_full_name]['messages'].append({
-                            'date': date_obj,
-                            'message': message
-                        })
+                    # Always store date, optionally store message
+                    msg_entry = {'date': date_obj}
+                    if collect_messages:
+                        message = commit_data.get('message', '')
+                        msg_entry['message'] = message
+                    
+                    stats[repo_full_name]['messages'].append(msg_entry)
     
     print_progress(len(repos_to_scan), len(repos_to_scan), "Complete", "")
     print_progress_done(f"Scanned {len(repos_to_scan)} repos, {repos_with_commits} with commits")
@@ -121,23 +116,24 @@ def scan_org_team_stats(repos_to_scan, since_date, until_date, collect_messages=
                 team_stats[author_login]['repos'][repo_full_name]['added'] += added
                 team_stats[author_login]['repos'][repo_full_name]['deleted'] += deleted
                 
-                if collect_messages:
-                    commit_data = commit.get('commit', {})
-                    author_date_str = commit_data.get('author', {}).get('date')
-                    message = commit_data.get('message', '')
+                # Always extract date for Active Days stat
+                commit_data = commit.get('commit', {})
+                author_date_str = commit_data.get('author', {}).get('date')
+                
+                if author_date_str:
+                    try:
+                        dt = datetime.datetime.fromisoformat(author_date_str.replace('Z', '+00:00'))
+                        date_obj = dt
+                    except ValueError:
+                        date_obj = datetime.datetime.combine(since_date, datetime.time.min)
                     
-                    if author_date_str:
-                        try:
-                            dt = datetime.datetime.fromisoformat(author_date_str.replace('Z', '+00:00'))
-                            date_obj = dt
-                        except ValueError:
-                            date_obj = datetime.datetime.combine(since_date, datetime.time.min)
-                        
-                        team_stats[author_login]['messages'].append({
-                            'date': date_obj,
-                            'message': message,
-                            'repo': repo_full_name
-                        })
+                    # Always store date, optionally store message
+                    msg_entry = {'date': date_obj, 'repo': repo_full_name}
+                    if collect_messages:
+                        message = commit_data.get('message', '')
+                        msg_entry['message'] = message
+                    
+                    team_stats[author_login]['messages'].append(msg_entry)
     
     print_progress(len(repos_to_scan), len(repos_to_scan), "Complete", "")
     print_progress_done(f"Scanned {len(repos_to_scan)} repos, {repos_with_commits} with commits")

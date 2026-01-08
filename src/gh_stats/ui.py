@@ -93,11 +93,29 @@ def generate_ascii_table(stats, since_date, until_date, use_colors=True):
 
     lines.append(get_sep("└─┴┘"))
 
+    # Calculate additional metrics
+    total_changes = total_added + total_deleted
+    net_growth = total_added - total_deleted
+    
+    # Calculate active days
+    all_dates = set()
+    for data in stats.values():
+        for msg in data.get('messages', []):
+            if 'date' in msg:
+                all_dates.add(msg['date'].date())
+    active_days = len(all_dates)
+    total_days = (until_date - since_date).days + 1
+    active_pct = (active_days / total_days * 100) if total_days > 0 else 0
+
     lines.append(f"\n{c(f'Summary ({since_date} ~ {until_date}):', Colors.BOLD)}")
     lines.append(f"  • Active Projects: {c(len(stats), Colors.CYAN)}")
     lines.append(f"  • Total Commits:   {c(total_commits, Colors.CYAN)}")
-    lines.append(f"  • Total Growth:    {c(f'+{total_added}', Colors.GREEN)} lines")
-    lines.append(f"  • Total Cleaning:  {c(f'-{total_deleted}', Colors.RED)} lines")
+    lines.append(f"  • Total Changes:   {c(total_changes, Colors.CYAN)} lines (added + deleted)")
+    lines.append(f"  • Net Growth:      {c(f'{net_growth:+}', Colors.GREEN if net_growth >= 0 else Colors.RED)} lines")
+    lines.append(f"  • Lines Added:     {c(f'+{total_added}', Colors.GREEN)}")
+    lines.append(f"  • Lines Deleted:   {c(f'-{total_deleted}', Colors.RED)}")
+    if active_days > 0:
+        lines.append(f"  • Active Days:     {c(active_days, Colors.CYAN)} / {total_days} ({active_pct:.0f}%)")
     
     return "\n".join(lines)
 
@@ -127,9 +145,16 @@ def generate_markdown_table(stats, since_date, until_date):
         lines.append(f"| {repo} | {data['commits']} | {changes_str} |")
 
     lines.append("")
+    
+    # Calculate additional metrics
+    total_changes = total_added + total_deleted
+    net_growth = total_added - total_deleted
+    
     lines.append(f"**Totals:**")
     lines.append(f"- Active Projects: {len(stats)}")
     lines.append(f"- Total Commits: {total_commits}")
+    lines.append(f"- Total Changes: {total_changes} lines")
+    lines.append(f"- Net Growth: {net_growth:+} lines")
     lines.append(f"- Lines Added: +{total_added}")
     lines.append(f"- Lines Deleted: -{total_deleted}")
     
@@ -190,11 +215,29 @@ def generate_team_table(team_stats, since_date, until_date, use_colors=True):
 
     lines.append(get_sep("└─┴┘"))
 
+    # Calculate additional metrics
+    total_changes = total_added + total_deleted
+    net_growth = total_added - total_deleted
+    
+    # Calculate active days for team
+    all_dates = set()
+    for data in team_stats.values():
+        for msg in data.get('messages', []):
+            if 'date' in msg:
+                all_dates.add(msg['date'].date())
+    active_days = len(all_dates)
+    total_days = (until_date - since_date).days + 1
+    active_pct = (active_days / total_days * 100) if total_days > 0 else 0
+
     lines.append(f"\n{c(f'Team Summary ({since_date} ~ {until_date}):', Colors.BOLD)}")
     lines.append(f"  • Contributors:    {c(len(team_stats), Colors.CYAN)}")
     lines.append(f"  • Total Commits:   {c(total_commits, Colors.CYAN)}")
-    lines.append(f"  • Total Growth:    {c(f'+{total_added}', Colors.GREEN)} lines")
-    lines.append(f"  • Total Cleaning:  {c(f'-{total_deleted}', Colors.RED)} lines")
+    lines.append(f"  • Total Changes:   {c(total_changes, Colors.CYAN)} lines")
+    lines.append(f"  • Net Growth:      {c(f'{net_growth:+}', Colors.GREEN if net_growth >= 0 else Colors.RED)} lines")
+    lines.append(f"  • Lines Added:     {c(f'+{total_added}', Colors.GREEN)}")
+    lines.append(f"  • Lines Deleted:   {c(f'-{total_deleted}', Colors.RED)}")
+    if active_days > 0:
+        lines.append(f"  • Active Days:     {c(active_days, Colors.CYAN)} / {total_days} ({active_pct:.0f}%)")
     
     return "\n".join(lines)
 
@@ -220,9 +263,16 @@ def generate_team_markdown_table(team_stats, since_date, until_date):
         lines.append(f"| {user} | {data['commits']} | {changes_str} |")
 
     lines.append("")
+    
+    # Calculate additional metrics
+    total_changes = total_added + total_deleted
+    net_growth = total_added - total_deleted
+    
     lines.append(f"**Team Totals:**")
     lines.append(f"- Contributors: {len(team_stats)}")
     lines.append(f"- Total Commits: {total_commits}")
+    lines.append(f"- Total Changes: {total_changes} lines")
+    lines.append(f"- Net Growth: {net_growth:+} lines")
     lines.append(f"- Lines Added: +{total_added}")
     lines.append(f"- Lines Deleted: -{total_deleted}")
     
