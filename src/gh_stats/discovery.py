@@ -45,18 +45,26 @@ def discover_repositories(username, since_date, until_date, orgs, personal, is_s
         
         if not is_self and not orgs:
             # When querying OTHER users without org filter: include ALL repos from Events API
-            # These are all repos where the target user had public activity
             repos_to_scan_set.add((full_name, name))
         else:
             # Apply filtering logic (for self, or for other user with org filter)
-            # 1. Personal Repos: Include if --personal is active AND owner is target user
             is_personal_match = personal and (owner == username)
-            
-            # 2. Org Repos: Include if owner is in the allowed orgs list
             is_org_match = owner in orgs
             
             if is_personal_match or is_org_match:
                  repos_to_scan_set.add((full_name, name))
+    
+    # 2. When viewing other user with org filter, also fetch org repos
+    # Events API can't see their activity in private org repos
+    if not is_self and orgs:
+        print(f"{Colors.CYAN}[...]{Colors.ENDC} Fetching organization repos...", end="", flush=True)
+        org_repo_count = 0
+        for org in orgs:
+            org_repos = get_org_repos(org, limit=None)
+            for r in org_repos:
+                repos_to_scan_set.add((r['full_name'], r['name']))
+                org_repo_count += 1
+        print(f"\r{Colors.GREEN}[✔]{Colors.ENDC} Added {org_repo_count} repos from {', '.join(orgs)}")
 
     # 2. Check Range for Fallback (Full History Layer)
     days_ago = (date.today() - since_date).days
