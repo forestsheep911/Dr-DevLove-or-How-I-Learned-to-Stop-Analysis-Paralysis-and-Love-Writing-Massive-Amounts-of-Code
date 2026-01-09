@@ -122,6 +122,9 @@ poetry run gh-stats --user colleague_name --orgs YOUR_COMPANY_ORG --range lastwe
 | `--export-commits` | 導出 Commit Message 到 Markdown 檔案 | False |
 | `--full-message` | 導出時包含完整的 Commit 正文（預設只導出標題） | False |
 | `--output` / `-o` | 指定導出檔案名（預設儲存到 `reports/` 目錄） | 自動產生 |
+| `--org-users` | 團隊模式：比較指定組織內所有貢獻者的統計 | False |
+| `--highlights` | 顯示洞察資訊（最長連續提交、最高產日期等） | False |
+| `--group-by` | 導出分組方式：`user`（按用戶）或 `repo`（按倉庫），用於 `--org-users` | `user` |
 
 ### 📅 高級用法
 
@@ -163,6 +166,24 @@ poetry run gh-stats --user alice --orgs YOUR_COMPANY_ORG --range lastweek --expo
 # 指定檔案名導出
 poetry run gh-stats --range lastweek --export-commits --output my_weekly_report
 # 輸出: reports/my_weekly_report.md
+```
+
+**6. 🏆 個人亮點**
+使用 `--highlights` 查看您的編碼模式洞察，包括最長連續提交天數、最高產的一天、最愛的工作日等。
+
+```bash
+poetry run gh-stats --range month --highlights
+```
+
+**7. 👥 團隊模式（組織對比）**
+使用 `--org-users` 比較組織內所有貢獻者的統計數據。此模式會掃描組織內所有倉庫，並按貢獻者彙總統計。
+
+```bash
+# 查看 YOUR_COMPANY_ORG 本月所有貢獻者的對比
+poetry run gh-stats --orgs YOUR_COMPANY_ORG --org-users --range thismonth
+
+# 導出團隊統計，按倉庫分組（而非按用戶）
+poetry run gh-stats --orgs YOUR_COMPANY_ORG --org-users --range lastweek --output team_report --group-by repo
 ```
 
 ## 📄 授權條款

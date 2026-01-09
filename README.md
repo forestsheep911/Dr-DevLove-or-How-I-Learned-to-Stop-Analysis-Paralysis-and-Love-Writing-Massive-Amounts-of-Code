@@ -91,6 +91,9 @@ poetry run gh-stats --range year --no-personal --org-limit 10
 | `--export-commits` | Export commit messages to a Markdown file | False |
 | `--full-message` | Include full commit body in export (default: title only) | False |
 | `--output` / `-o` | Specify output filename (defaults to `reports/` directory) | Auto-generated |
+| `--org-users` | Team mode: compare all contributors in specified org(s) | False |
+| `--highlights` | Show insights (longest streak, most productive day, etc.) | False |
+| `--group-by` | Group export by `user` or `repo` (for `--org-users`) | `user` |
 
 ### 📅 Advanced Usage
 
@@ -135,6 +138,24 @@ poetry run gh-stats --user alice --orgs YOUR_COMPANY_ORG --range lastweek --expo
 # Export with custom filename
 poetry run gh-stats --range lastweek --export-commits --output my_weekly_report
 # Output: reports/my_weekly_report.md
+```
+
+**6. 🏆 Personal Highlights**
+Use `--highlights` to see insights about your coding patterns, including your longest streak, most productive day, and favorite weekday.
+
+```bash
+poetry run gh-stats --range month --highlights
+```
+
+**7. 👥 Team Mode (Org-wide Comparison)**
+Use `--org-users` to compare all contributors in an organization. This scans all repos in the org and aggregates stats per contributor.
+
+```bash
+# Compare all contributors in YOUR_COMPANY_ORG this month
+poetry run gh-stats --orgs YOUR_COMPANY_ORG --org-users --range thismonth
+
+# Export team stats grouped by repo instead of user
+poetry run gh-stats --orgs YOUR_COMPANY_ORG --org-users --range lastweek --output team_report --group-by repo
 ```
 
 ## 🧪 Clinical Trials
