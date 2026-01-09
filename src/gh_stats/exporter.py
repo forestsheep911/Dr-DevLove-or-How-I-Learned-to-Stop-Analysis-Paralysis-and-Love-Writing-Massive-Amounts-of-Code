@@ -25,39 +25,7 @@ def generate_markdown(stats, since_date, until_date, full_message=False, highlig
         
     md.append(f"# GitHub Activity Report ({since_date} to {until_date})\n")
 
-def generate_highlights_markdown(highlights):
-    """Generate markdown section for highlights."""
-    if not highlights:
-        return ""
-        
-    md = []
-    md.append("## ✨ Highlights")
-    if 'streak' in highlights:
-        s = highlights['streak']
-        start = s['start'].strftime('%Y-%m-%d')
-        end = s['end'].strftime('%Y-%m-%d')
-        md.append(f"- **🔥 Longest Streak:** {s['days']} days ({start} ~ {end})")
-        
-    if 'best_day' in highlights:
-        b = highlights['best_day']
-        md.append(f"- **🏆 Most Productive Day:** {b['date']} ({b['changes']} lines changed, {b['commits']} commits)")
-        
-    if 'favorite_weekday' in highlights:
-        w = highlights['favorite_weekday']
-        pct = w['commits'] / w['total_commits'] * 100
-        md.append(f"- **📅 Favorite Weekday:** {w['day']} ({pct:.0f}% of commits)")
-        
-    if 'best_repo' in highlights:
-        r = highlights['best_repo']
-        md.append(f"- **❤️  Repo Love:** {r['name']} ({r['commits']} commits)")
-        
-    if 'longest_break' in highlights:
-        b = highlights['longest_break']
-        start = b['start'].strftime('%Y-%m-%d')
-        end = b['end'].strftime('%Y-%m-%d')
-        md.append(f"- **🛌 Longest Break:** {b['days']} days ({start} ~ {end})")
-    
-    return "\n".join(md)
+
     
     # Sort repos by commit count (desc) seems useful, or just alphabetical. 
     # Let's do active repos first (more commits).
@@ -260,3 +228,37 @@ def write_export_file(content, since_date, until_date, output_filename=None):
     with open(filename, 'w', encoding='utf-8') as f:
         f.write(content)
     return filename
+
+def generate_highlights_markdown(highlights):
+    """Generate markdown section for highlights."""
+    if not highlights:
+        return ""
+        
+    md = []
+    md.append("## ✨ Highlights")
+    if 'streak' in highlights:
+        s = highlights['streak']
+        start = s['start'].strftime('%Y-%m-%d')
+        end = s['end'].strftime('%Y-%m-%d')
+        md.append(f"- **🔥 Longest Streak:** {s['days']} days ({start} ~ {end})")
+        
+    if 'best_day' in highlights:
+        b = highlights['best_day']
+        md.append(f"- **🏆 Most Productive Day:** {b['date']} ({b['changes']} lines changed, {b['commits']} commits)")
+        
+    if 'favorite_weekday' in highlights:
+        w = highlights['favorite_weekday']
+        pct = w['commits'] / w['total_commits'] * 100
+        md.append(f"- **📅 Favorite Weekday:** {w['day']} ({pct:.0f}% of commits)")
+        
+    if 'best_repo' in highlights:
+        r = highlights['best_repo']
+        md.append(f"- **❤️  Repo Love:** {r['name']} ({r['commits']} commits)")
+        
+    if 'longest_break' in highlights:
+        b = highlights['longest_break']
+        start = b['start'].strftime('%Y-%m-%d')
+        end = b['end'].strftime('%Y-%m-%d')
+        md.append(f"- **🛌 Longest Break:** {b['days']} days ({start} ~ {end})")
+    
+    return "\n".join(md)
