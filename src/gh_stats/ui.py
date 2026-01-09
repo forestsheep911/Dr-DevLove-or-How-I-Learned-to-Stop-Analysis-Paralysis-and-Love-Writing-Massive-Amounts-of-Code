@@ -325,3 +325,9 @@ def print_highlights(highlights):
     if 'best_repo' in highlights:
         r = highlights['best_repo']
         print(f"  ❤️  {Colors.BOLD}Repo Love:{Colors.ENDC}           {c(r['name'], Colors.CYAN)} ({c(r['commits'], Colors.CYAN)} commits)")
+
+    if 'longest_break' in highlights:
+        b = highlights['longest_break']
+        start = b['start'].strftime('%Y-%m-%d')
+        end = b['end'].strftime('%Y-%m-%d')
+        print(f"  🛌 {Colors.BOLD}Longest Break:{Colors.ENDC}       {c(b['days'], Colors.CYAN)} days ({start} ~ {end})")

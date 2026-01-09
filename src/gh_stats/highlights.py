@@ -111,5 +111,27 @@ def generate_highlights(stats):
             'name': best_repo[0],
             'commits': best_repo[1]
         }
+        
+    # 5. Longest Break
+    if unique_dates and len(unique_dates) > 1:
+        max_break = 0
+        max_break_start = None
+        max_break_end = None
+        
+        for i in range(1, len(unique_dates)):
+            delta = (unique_dates[i] - unique_dates[i-1]).days
+            if delta > 1:
+                break_days = delta - 1
+                if break_days > max_break:
+                    max_break = break_days
+                    max_break_start = unique_dates[i-1] + timedelta(days=1)
+                    max_break_end = unique_dates[i] - timedelta(days=1)
+        
+        if max_break > 0:
+            highlights['longest_break'] = {
+                'days': max_break,
+                'start': max_break_start,
+                'end': max_break_end
+            }
 
     return highlights

@@ -50,6 +50,12 @@ def generate_highlights_markdown(highlights):
     if 'best_repo' in highlights:
         r = highlights['best_repo']
         md.append(f"- **❤️  Repo Love:** {r['name']} ({r['commits']} commits)")
+        
+    if 'longest_break' in highlights:
+        b = highlights['longest_break']
+        start = b['start'].strftime('%Y-%m-%d')
+        end = b['end'].strftime('%Y-%m-%d')
+        md.append(f"- **🛌 Longest Break:** {b['days']} days ({start} ~ {end})")
     
     return "\n".join(md)
     
