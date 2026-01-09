@@ -5,11 +5,12 @@ import datetime
 import shutil
 
 from .api import get_current_user, get_org_repos
-from .ui import Colors, print_styled, render_table, generate_ascii_table, generate_markdown_table, generate_team_table, generate_team_markdown_table
+from .ui import Colors, print_styled, render_table, generate_ascii_table, generate_markdown_table, generate_team_table, generate_team_markdown_table, print_highlights
 from .date_parser import parse_date_range, parse_relative_date
 from .discovery import discover_repositories
 from .scanner import scan_repositories, scan_org_team_stats
-from .exporter import generate_markdown, generate_team_markdown, write_export_file
+from .exporter import generate_markdown, generate_team_markdown, write_export_file, generate_highlights_markdown
+from .highlights import generate_highlights
 
 def main():
     parser = argparse.ArgumentParser(description="GitHub contribution statistics")
@@ -31,6 +32,7 @@ def main():
     parser.add_argument('--full-message', action='store_true', help='Include full commit message body in export')
     parser.add_argument('--output', '-o', type=str, help='Specify output filename for export')
     parser.add_argument('--org-users', action='store_true', help='Compare all contributors in the specified org(s)')
+    parser.add_argument('--highlights', action='store_true', help='Show insights like longest streak and most productive day')
     parser.add_argument('--group-by', type=str, choices=['user', 'repo'], default='user', help='Group export by user or repo (for --org-users)')
     args = parser.parse_args()
 
@@ -171,23 +173,42 @@ def main():
     )
 
     # 3. Output Phase
+    highlights = None
+    if args.highlights:
+        print_styled(f"\nComputing highlights...", Colors.CYAN)
+        highlights = generate_highlights(stats)
+
     msg_content = ""
+    # Note: We don't pass highlights here, we handle them separately for flexibility
     if args.export_commits or args.full_message:
         msg_content = generate_markdown(stats, since_date, until_date, full_message=args.full_message)
 
     if args.output:
-        # File Mode: Combine Markdown Table + Messages
+        # File Mode: Combine Markdown Table + Highlights + Messages
         print_styled(f"\nGenerating report...", Colors.CYAN)
         table_str_file = generate_markdown_table(stats, since_date, until_date)
         
-        # Combine: Markdown table first, then commit details
-        final_content = f"{table_str_file}\n\n{msg_content}"
+        parts = [table_str_file]
+        
+        if highlights:
+            hl_str = generate_highlights_markdown(highlights)
+            if hl_str:
+                parts.append(hl_str)
+                
+        if msg_content:
+            parts.append(msg_content)
+        
+        final_content = "\n\n".join(parts)
         
         filename = write_export_file(final_content, since_date, until_date, args.output)
         print(f"{Colors.GREEN}[✔]{Colors.ENDC} Exported all data to: {filename}")
     else:
-        # Console Mode: Print Table (Color) + Messages (if any)
+        # Console Mode: Print Table (Color) + Highlights + Messages (if any)
         print(generate_ascii_table(stats, since_date, until_date, use_colors=True))
+        
+        if highlights:
+            print_highlights(highlights)
+            
         if msg_content:
             print("\nDetailed Report:\n")
             print(msg_content)

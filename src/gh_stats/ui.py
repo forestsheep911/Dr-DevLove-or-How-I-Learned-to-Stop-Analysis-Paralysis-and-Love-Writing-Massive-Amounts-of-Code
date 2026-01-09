@@ -296,3 +296,32 @@ def generate_team_markdown_table(team_stats, since_date, until_date):
     lines.extend(table_rows)
     
     return "\n".join(lines)
+
+def print_highlights(highlights):
+    """Print highlights to console."""
+    if not highlights:
+        return
+        
+    def c(text, color):
+        return f"{color}{text}{Colors.ENDC}"
+        
+    print(f"\n{Colors.BOLD}✨ Highlights:{Colors.ENDC}")
+    
+    if 'streak' in highlights:
+        s = highlights['streak']
+        start = s['start'].strftime('%Y-%m-%d')
+        end = s['end'].strftime('%Y-%m-%d')
+        print(f"  🔥 {Colors.BOLD}Longest Streak:{Colors.ENDC}      {c(s['days'], Colors.CYAN)} days ({start} ~ {end})")
+        
+    if 'best_day' in highlights:
+        b = highlights['best_day']
+        print(f"  🏆 {Colors.BOLD}Most Productive Day:{Colors.ENDC} {b['date']} ({c(b['commits'], Colors.CYAN)} commits)")
+        
+    if 'favorite_weekday' in highlights:
+        w = highlights['favorite_weekday']
+        pct = w['commits'] / w['total_commits'] * 100
+        print(f"  📅 {Colors.BOLD}Favorite Weekday:{Colors.ENDC}    {c(w['day'], Colors.CYAN)} ({pct:.0f}% of commits)")
+        
+    if 'best_repo' in highlights:
+        r = highlights['best_repo']
+        print(f"  ❤️  {Colors.BOLD}Repo Love:{Colors.ENDC}           {c(r['name'], Colors.CYAN)} ({c(r['commits'], Colors.CYAN)} commits)")
