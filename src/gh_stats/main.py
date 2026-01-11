@@ -11,6 +11,7 @@ from .discovery import discover_repositories
 from .scanner import scan_repositories, scan_org_team_stats
 from .exporter import generate_markdown, generate_team_markdown, write_export_file, generate_highlights_markdown
 from .highlights import generate_highlights
+from .args import parse_with_diagnostics, format_diagnostics
 
 def main():
     parser = argparse.ArgumentParser(description="GitHub contribution statistics")
@@ -31,10 +32,30 @@ def main():
     parser.add_argument('--export-commits', action='store_true', help='Export commit messages to a Markdown file')
     parser.add_argument('--full-message', action='store_true', help='Include full commit message body in export')
     parser.add_argument('--output', '-o', type=str, help='Specify output filename for export')
-    parser.add_argument('--org-users', action='store_true', help='Compare all contributors in the specified org(s)')
+    parser.add_argument('--org-summary', type=str, metavar='ORG', help='Org summary mode: analyze a single organization (mutually exclusive with --orgs)')
+    parser.add_argument('--arena', action='store_true', help='Show competition rankings (requires --org-summary)')
+    parser.add_argument('--arena-top', type=int, default=5, metavar='N', help='Number of top contributors to show in arena rankings (0=all, default=5)')
     parser.add_argument('--highlights', action='store_true', help='Show insights like longest streak and most productive day')
-    parser.add_argument('--group-by', type=str, choices=['user', 'repo'], default='user', help='Group export by user or repo (for --org-users)')
+    parser.add_argument('--dry-run', action='store_true', help='Show parameter diagnostics without executing')
     args = parser.parse_args()
+
+    # Dry-run mode: show diagnostics and exit
+    if args.dry_run:
+        _, diag_result = parse_with_diagnostics()
+        output = format_diagnostics(diag_result)
+        if args.output:
+            import datetime as dt
+            filename = args.output
+            if not filename.endswith('.txt') and not filename.endswith('.md'):
+                filename += '.txt'
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write(f"# Dry Run Diagnostics\n")
+                f.write(f"# Generated: {dt.datetime.now().isoformat()}\n\n")
+                f.write(output)
+            print(f"{Colors.GREEN}[✔]{Colors.ENDC} Dry-run diagnostics saved to: {filename}")
+        else:
+            print(output)
+        return
 
     # Remove defaults_map and automatic limit logic
     personal_limit = args.personal_limit
@@ -70,6 +91,15 @@ def main():
     if shutil.which('gh') is None:
         print_styled("Error: 'gh' CLI not installed.", Colors.RED, True)
         sys.exit(1)
+    
+    # --arena-top implies --arena
+    if args.arena_top != 5:  # User explicitly set arena-top
+        args.arena = True
+    
+    # Check --arena requires --org-summary
+    if args.arena and not args.org_summary:
+        print_styled("Error: --arena requires --org-summary to be specified.", Colors.RED)
+        sys.exit(1)
 
     print_styled("GitHub Contribution Statistics", Colors.HEADER, True)
     print(f"Range: {since_date} to {until_date}")
@@ -95,25 +125,28 @@ def main():
         else:
             print(f"{Colors.CYAN}[INFO]{Colors.ENDC} Analyzing user: {target_user} (public repos only)")
     
-    # Team mode: --org-users
-    if args.org_users:
-        if not orgs:
-            print_styled("Error: --org-users requires --orgs to be specified.", Colors.RED)
+    # Org Summary mode: --org-summary
+    if args.org_summary:
+        # Mutual exclusion check
+        if orgs:
+            print_styled("Error: --org-summary and --orgs are mutually exclusive.", Colors.RED)
             sys.exit(1)
         
-        print(f"{Colors.CYAN}[INFO]{Colors.ENDC} Team mode: comparing all contributors in {', '.join(orgs)}")
+        # --arena requires --org-summary (already checked by being inside this block)
+        org = args.org_summary
         
-        # Fetch all org repos (no limit prompt for team mode)
+        print(f"{Colors.CYAN}[INFO]{Colors.ENDC} Org Summary mode: analyzing organization '{org}'")
+        
+        # Fetch all org repos
         repos_to_scan = []
         print(f"{Colors.CYAN}[...]{Colors.ENDC} Fetching organization repos...", end="", flush=True)
-        for org in orgs:
-            org_repos = get_org_repos(org, limit=None)
-            for r in org_repos:
-                repos_to_scan.append((r['full_name'], r['name']))
-        print(f"\r{Colors.GREEN}[✔]{Colors.ENDC} Found {len(repos_to_scan)} repos in {', '.join(orgs)}")
+        org_repos = get_org_repos(org, limit=None)
+        for r in org_repos:
+            repos_to_scan.append((r['full_name'], r['name']))
+        print(f"\r{Colors.GREEN}[✔]{Colors.ENDC} Found {len(repos_to_scan)} repos in {org}")
         
         if not repos_to_scan:
-            print_styled("No repositories found in the specified org(s).", Colors.WARNING)
+            print_styled("No repositories found in the specified org.", Colors.WARNING)
             return
         
         # Scan for team stats
@@ -128,23 +161,18 @@ def main():
             print_styled("No commits found in the specified range.", Colors.WARNING)
             return
         
-        # Output
-        msg_content = ""
-        if args.export_commits or args.full_message:
-            msg_content = generate_team_markdown(team_stats, since_date, until_date, 
-                                                  group_by=args.group_by, full_message=args.full_message)
+        # Output - use new format functions
+        from .ui import generate_org_summary_output, generate_org_summary_markdown
+        
+        arena_top = args.arena_top if args.arena_top > 0 else None  # None means all
         
         if args.output:
-            print_styled(f"\nGenerating team report...", Colors.CYAN)
-            table_str_file = generate_team_markdown_table(team_stats, since_date, until_date)
-            final_content = f"{table_str_file}\n\n{msg_content}"
-            filename = write_export_file(final_content, since_date, until_date, args.output)
-            print(f"{Colors.GREEN}[✔]{Colors.ENDC} Exported team data to: {filename}")
+            print_styled(f"\nGenerating org summary report...", Colors.CYAN)
+            content = generate_org_summary_markdown(team_stats, since_date, until_date, org, args.arena, arena_top)
+            filename = write_export_file(content, since_date, until_date, args.output)
+            print(f"{Colors.GREEN}[✔]{Colors.ENDC} Exported org summary to: {filename}")
         else:
-            print(generate_team_table(team_stats, since_date, until_date, use_colors=True))
-            if msg_content:
-                print("\nDetailed Team Report:\n")
-                print(msg_content)
+            print(generate_org_summary_output(team_stats, since_date, until_date, org, args.arena, arena_top, use_colors=True))
         return
     
     # Normal mode (non-team)
