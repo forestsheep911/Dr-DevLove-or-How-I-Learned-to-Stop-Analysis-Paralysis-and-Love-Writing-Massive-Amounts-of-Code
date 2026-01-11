@@ -331,3 +331,280 @@ def print_highlights(highlights):
         start = b['start'].strftime('%Y-%m-%d')
         end = b['end'].strftime('%Y-%m-%d')
         print(f"  🛌 {Colors.BOLD}Longest Break:{Colors.ENDC}       {c(b['days'], Colors.CYAN)} days ({start} ~ {end})")
+
+
+def _calculate_project_breakdown(team_stats):
+    """
+    Calculate project-level breakdown with primary contributor detection.
+    Returns list of (repo, total_commits, contributor_count, primary_contributor_or_none)
+    """
+    # Aggregate by repo
+    repo_stats = {}  # {repo: {total_commits, total_changes, contributors: {user: changes}}}
+    
+    for user, data in team_stats.items():
+        for repo, repo_data in data.get('repos', {}).items():
+            if repo not in repo_stats:
+                repo_stats[repo] = {'commits': 0, 'changes': 0, 'contributors': {}}
+            repo_stats[repo]['commits'] += repo_data['commits']
+            changes = repo_data['added'] + repo_data['deleted']
+            repo_stats[repo]['changes'] += changes
+            repo_stats[repo]['contributors'][user] = changes
+    
+    result = []
+    for repo, stats in sorted(repo_stats.items(), key=lambda x: x[1]['commits'], reverse=True):
+        contributors = stats['contributors']
+        sorted_contributors = sorted(contributors.items(), key=lambda x: x[1], reverse=True)
+        
+        primary = None
+        if len(sorted_contributors) >= 2:
+            first_changes = sorted_contributors[0][1]
+            second_changes = sorted_contributors[1][1]
+            # First place > 150% of second place
+            if second_changes > 0 and first_changes > second_changes * 1.5:
+                pct = (first_changes / stats['changes'] * 100) if stats['changes'] > 0 else 0
+                primary = (sorted_contributors[0][0], pct)
+        elif len(sorted_contributors) == 1:
+            # Only one contributor
+            primary = (sorted_contributors[0][0], 100.0)
+        
+        result.append((repo, stats['commits'], len(contributors), primary))
+    
+    return result
+
+
+def _calculate_participant_breakdown(team_stats, since_date, until_date):
+    """
+    Calculate participant-level breakdown (no code stats).
+    Returns list of (user, project_count, commits, active_days_str)
+    """
+    total_days = (until_date - since_date).days + 1
+    result = []
+    
+    for user, data in sorted(team_stats.items(), key=lambda x: x[1]['commits'], reverse=True):
+        project_count = len(data.get('repos', {}))
+        commits = data['commits']
+        
+        # Calculate active days
+        user_dates = set()
+        for msg in data.get('messages', []):
+            if 'date' in msg:
+                d = msg['date']
+                if hasattr(d, 'date'):
+                    user_dates.add(d.date())
+                else:
+                    user_dates.add(d)
+        active_days = len(user_dates)
+        active_pct = (active_days / total_days * 100) if total_days > 0 else 0
+        active_str = f"{active_days}/{total_days} ({active_pct:.0f}%)"
+        
+        result.append((user, project_count, commits, active_str))
+    
+    return result
+
+
+def generate_org_summary_output(team_stats, since_date, until_date, org_name, show_arena=False, arena_top=5, use_colors=True):
+    """Generate console output for org-summary mode."""
+    lines = []
+    
+    def c(text, color):
+        return f"{color}{text}{Colors.ENDC}" if use_colors else str(text)
+    
+    # 1. Totals Section
+    total_commits = sum(d['commits'] for d in team_stats.values())
+    total_added = sum(d['added'] for d in team_stats.values())
+    total_deleted = sum(d['deleted'] for d in team_stats.values())
+    total_changes = total_added + total_deleted
+    net_growth = total_added - total_deleted
+    
+    # Count active repos
+    all_repos = set()
+    for data in team_stats.values():
+        all_repos.update(data.get('repos', {}).keys())
+    
+    lines.append("")
+    lines.append(f"{c(f'=== Org Summary: {org_name} ({since_date} ~ {until_date}) ===', Colors.BOLD)}")
+    lines.append("")
+    lines.append(f"{c('📊 Totals:', Colors.BOLD)}")
+    lines.append(f"  • Active Projects: {c(len(all_repos), Colors.CYAN)}")
+    lines.append(f"  • Contributors:    {c(len(team_stats), Colors.CYAN)}")
+    lines.append(f"  • Total Commits:   {c(total_commits, Colors.CYAN)}")
+    lines.append(f"  • Total Changes:   {c(total_changes, Colors.CYAN)} lines")
+    lines.append(f"  • Net Growth:      {c(f'{net_growth:+}', Colors.GREEN if net_growth >= 0 else Colors.RED)} lines")
+    lines.append(f"  • Lines Added:     {c(f'+{total_added}', Colors.GREEN)}")
+    lines.append(f"  • Lines Deleted:   {c(f'-{total_deleted}', Colors.RED)}")
+    
+    # 2. Project Breakdown
+    lines.append("")
+    lines.append(f"{c('📦 Project Breakdown:', Colors.BOLD)}")
+    project_data = _calculate_project_breakdown(team_stats)
+    for repo, commits, contrib_count, primary in project_data:
+        primary_str = ""
+        if primary:
+            primary_str = f" → {c(f'@{primary[0]}', Colors.CYAN)} ({primary[1]:.0f}%)"
+        lines.append(f"  • {repo}: {commits} commits, {contrib_count} contributors{primary_str}")
+    
+    # 3. Participant Breakdown
+    lines.append("")
+    lines.append(f"{c('👥 Participant Breakdown:', Colors.BOLD)}")
+    participant_data = _calculate_participant_breakdown(team_stats, since_date, until_date)
+    for user, proj_count, commits, active_str in participant_data:
+        lines.append(f"  • @{user}: {proj_count} projects, {commits} commits, Active: {active_str}")
+    
+    # 4. Arena (if enabled)
+    if show_arena:
+        from .arena import generate_arena_rankings
+        rankings = generate_arena_rankings(team_stats, since_date, until_date)
+        
+        lines.append("")
+        lines.append(f"{c('🏟️ Arena:', Colors.BOLD)}")
+        
+        # Helper for slicing: None means all
+        def top_n(lst):
+            return lst[:arena_top] if arena_top else lst
+        
+        # Commit Champions
+        lines.append(f"\n  {c('🏆 Commit Champions:', Colors.BOLD)}")
+        for i, (user, count) in enumerate(top_n(rankings['commit_ranking']), 1):
+            lines.append(f"    {i}. @{user}: {count} commits")
+        
+        # Code Additions
+        lines.append(f"\n  {c('📈 Code Additions:', Colors.BOLD)}")
+        for i, (user, added) in enumerate(top_n(rankings['additions_ranking']), 1):
+            lines.append(f"    {i}. @{user}: +{added} lines")
+        
+        # Code Deletions
+        lines.append(f"\n  {c('📉 Code Deletions:', Colors.BOLD)}")
+        for i, (user, deleted) in enumerate(top_n(rankings['deletions_ranking']), 1):
+            lines.append(f"    {i}. @{user}: -{deleted} lines")
+        
+        # Total Changes
+        lines.append(f"\n  {c('📊 Total Changes:', Colors.BOLD)}")
+        for i, (user, changes) in enumerate(top_n(rankings['total_changes_ranking']), 1):
+            lines.append(f"    {i}. @{user}: {changes} lines")
+        
+        # Longest Streak
+        if rankings['longest_streak_ranking']:
+            lines.append(f"\n  {c('🔥 Longest Streak:', Colors.BOLD)}")
+            for i, (user, days, start, end) in enumerate(top_n(rankings['longest_streak_ranking']), 1):
+                lines.append(f"    {i}. @{user}: {days} days ({start} ~ {end})")
+        
+        # Avg Commit Size
+        lines.append(f"\n  {c('📊 Avg Commit Size (lines/commit):', Colors.BOLD)}")
+        for i, (user, avg) in enumerate(top_n(rankings['avg_commit_size_ranking']), 1):
+            lines.append(f"    {i}. @{user}: {avg} lines")
+    
+    return "\n".join(lines)
+
+
+def generate_org_summary_markdown(team_stats, since_date, until_date, org_name, show_arena=False, arena_top=5):
+    """Generate markdown output for org-summary mode."""
+    lines = []
+    
+    # 1. Totals Section
+    total_commits = sum(d['commits'] for d in team_stats.values())
+    total_added = sum(d['added'] for d in team_stats.values())
+    total_deleted = sum(d['deleted'] for d in team_stats.values())
+    total_changes = total_added + total_deleted
+    net_growth = total_added - total_deleted
+    
+    all_repos = set()
+    for data in team_stats.values():
+        all_repos.update(data.get('repos', {}).keys())
+    
+    lines.append(f"# Org Summary: {org_name} ({since_date} ~ {until_date})\n")
+    
+    lines.append("**Totals:**")
+    lines.append(f"- Active Projects: {len(all_repos)}")
+    lines.append(f"- Contributors: {len(team_stats)}")
+    lines.append(f"- Total Commits: {total_commits}")
+    lines.append(f"- Total Changes: {total_changes} lines")
+    lines.append(f"- Net Growth: {net_growth:+} lines")
+    lines.append(f"- Lines Added: +{total_added}")
+    lines.append(f"- Lines Deleted: -{total_deleted}")
+    lines.append("")
+    
+    # 2. Project Breakdown
+    lines.append("## 📦 Project Breakdown\n")
+    lines.append("| Project | Commits | Contributors | Primary Contributor |")
+    lines.append("|:--------|--------:|-------------:|:--------------------|")
+    
+    project_data = _calculate_project_breakdown(team_stats)
+    for repo, commits, contrib_count, primary in project_data:
+        primary_str = "-"
+        if primary:
+            primary_str = f"@{primary[0]} ({primary[1]:.0f}%)"
+        lines.append(f"| {repo} | {commits} | {contrib_count} | {primary_str} |")
+    lines.append("")
+    
+    # 3. Participant Breakdown
+    lines.append("## 👥 Participant Breakdown\n")
+    lines.append("| Contributor | Projects | Commits | Active Days |")
+    lines.append("|:------------|:---------|--------:|:------------|")
+    
+    participant_data = _calculate_participant_breakdown(team_stats, since_date, until_date)
+    for user, proj_count, commits, active_str in participant_data:
+        lines.append(f"| @{user} | {proj_count} | {commits} | {active_str} |")
+    lines.append("")
+    
+    # 4. Arena (if enabled)
+    if show_arena:
+        from .arena import generate_arena_rankings
+        rankings = generate_arena_rankings(team_stats, since_date, until_date)
+        
+        # Helper for slicing: None means all
+        def top_n(lst):
+            return lst[:arena_top] if arena_top else lst
+        
+        lines.append("## 🏟️ Arena\n")
+        
+        # Commit Champions
+        lines.append("### 🏆 Commit Champions\n")
+        lines.append("| Rank | Contributor | Commits |")
+        lines.append("|-----:|:------------|--------:|")
+        for i, (user, count) in enumerate(top_n(rankings['commit_ranking']), 1):
+            lines.append(f"| {i} | @{user} | {count} |")
+        lines.append("")
+        
+        # Code Additions
+        lines.append("### 📈 Code Additions\n")
+        lines.append("| Rank | Contributor | Lines Added |")
+        lines.append("|-----:|:------------|------------:|")
+        for i, (user, added) in enumerate(top_n(rankings['additions_ranking']), 1):
+            lines.append(f"| {i} | @{user} | +{added} |")
+        lines.append("")
+        
+        # Code Deletions
+        lines.append("### 📉 Code Deletions\n")
+        lines.append("| Rank | Contributor | Lines Deleted |")
+        lines.append("|-----:|:------------|--------------:|")
+        for i, (user, deleted) in enumerate(top_n(rankings['deletions_ranking']), 1):
+            lines.append(f"| {i} | @{user} | -{deleted} |")
+        lines.append("")
+        
+        # Total Changes
+        lines.append("### 📊 Total Changes\n")
+        lines.append("| Rank | Contributor | Total Lines |")
+        lines.append("|-----:|:------------|------------:|")
+        for i, (user, changes) in enumerate(top_n(rankings['total_changes_ranking']), 1):
+            lines.append(f"| {i} | @{user} | {changes} |")
+        lines.append("")
+        
+        # Longest Streak
+        if rankings['longest_streak_ranking']:
+            lines.append("### 🔥 Longest Streak\n")
+            lines.append("| Rank | Contributor | Days | Period |")
+            lines.append("|-----:|:------------|-----:|:-------|")
+            for i, (user, days, start, end) in enumerate(top_n(rankings['longest_streak_ranking']), 1):
+                lines.append(f"| {i} | @{user} | {days} | {start} ~ {end} |")
+            lines.append("")
+        
+        # Avg Commit Size
+        lines.append("### 📊 Avg Commit Size\n")
+        lines.append("| Rank | Contributor | Lines/Commit |")
+        lines.append("|-----:|:------------|-------------:|")
+        for i, (user, avg) in enumerate(top_n(rankings['avg_commit_size_ranking']), 1):
+            lines.append(f"| {i} | @{user} | {avg} |")
+        lines.append("")
+    
+    return "\n".join(lines)
+
