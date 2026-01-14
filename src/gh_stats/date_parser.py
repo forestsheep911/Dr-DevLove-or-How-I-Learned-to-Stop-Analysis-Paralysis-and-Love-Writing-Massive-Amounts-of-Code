@@ -7,6 +7,8 @@ def parse_relative_date(date_str):
     Returns a datetime.date object.
     """
     today = datetime.date.today()
+    now_dt = datetime.datetime.now()
+
     if date_str == 'today' or date_str == 'now':
         return today
     
@@ -15,32 +17,38 @@ def parse_relative_date(date_str):
     if compact_match:
         return datetime.date(int(compact_match.group(1)), int(compact_match.group(2)), int(compact_match.group(3)))
 
-    # Explicit "lastN..." format (e.g. "last3days" -> 3 days ago, "last2weeks" -> 2 weeks ago)
-    # Rolling window anchor
-    simple_match = re.match(r'^last(\d+)(day|week|month|year)s?$', date_str)
+    # Explicit "lastN..." format (e.g. "last3days" -> 3 days ago)
+    # Also support simple "N..." format (e.g. "3days" -> 3 days ago) as implied "last"
+    simple_match = re.match(r'^(?:last)?(\d+)(hour|day|week|month|year)s?$', date_str)
     if simple_match:
         num = int(simple_match.group(1))
         unit = simple_match.group(2)
-        if unit == 'day': delta = datetime.timedelta(days=num)
+        if unit == 'hour': delta = datetime.timedelta(hours=num)
+        elif unit == 'day': delta = datetime.timedelta(days=num)
         elif unit == 'week': delta = datetime.timedelta(weeks=num)
         elif unit == 'month': delta = datetime.timedelta(days=num*30) # approx
         elif unit == 'year': delta = datetime.timedelta(days=num*365) # approx
-        return today - delta
+        
+        # Use simple subtraction from now_dt to handle hours correctly, then convert to date
+        return (now_dt - delta).date()
 
     # yt-dlp style: (today|now)-N[unit]
-    match = re.match(r'^(today|now)([-+])(\d+)(day|week|month|year)s?$', date_str)
+    # yt-dlp style: (today|now)-N[unit]
+    match = re.match(r'^(today|now)([-+])(\d+)(hour|day|week|month|year)s?$', date_str)
     if match:
         op = match.group(2)
         num = int(match.group(3))
         unit = match.group(4)
         
-        if unit == 'day': delta = datetime.timedelta(days=num)
+        if unit == 'hour': delta = datetime.timedelta(hours=num)
+        elif unit == 'day': delta = datetime.timedelta(days=num)
         elif unit == 'week': delta = datetime.timedelta(weeks=num)
         elif unit == 'month': delta = datetime.timedelta(days=num*30)
         elif unit == 'year': delta = datetime.timedelta(days=num*365)
         
-        if op == '-': return today - delta
-        else: return today + delta
+        # Always operate on datetime.datetime to support hours accurately
+        if op == '-': return (now_dt - delta).date()
+        else: return (now_dt + delta).date()
         
     raise ValueError(f"Unknown date format: {date_str}")
 
