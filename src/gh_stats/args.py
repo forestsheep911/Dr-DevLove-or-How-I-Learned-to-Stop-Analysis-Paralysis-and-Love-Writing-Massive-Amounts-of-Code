@@ -107,6 +107,7 @@ PARAM_ENTITY_MAP = {
     "highlights": Entity.E_DISPLAY,
     "dry_run": Entity.E_DISPLAY,
     "exclude_noise": Entity.E_DISPLAY,
+    "dev": Entity.E_DISPLAY,
 }
 
 # 参数默认值表
@@ -129,6 +130,7 @@ PARAM_DEFAULTS = {
     "highlights": False,
     "dry_run": False,
     "exclude_noise": False,
+    "dev": False,
 }
 
 
@@ -157,6 +159,7 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument('--highlights', action='store_true', help='Show insights like longest streak and most productive day')
     parser.add_argument('--exclude-noise', action='store_true', help='Exclude noisy files like lockfiles and generated artifacts')
     parser.add_argument('--dry-run', action='store_true', help='Show parameter diagnostics without executing')
+    parser.add_argument('--dev', action='store_true', help='Enable development diagnostic mode: print command, parsing details, and errors before execution')
     
     return parser
 
@@ -263,7 +266,7 @@ def format_diagnostics(result: ParseResult) -> str:
     all_errors = result.exclusion_violations + result.dependency_errors
     if all_errors:
         for err in all_errors:
-            lines.append(f"  ❌ {err}")
+            lines.append(f"  [X] {err}")
     else:
         lines.append("  (none)")
     lines.append("")
@@ -272,7 +275,7 @@ def format_diagnostics(result: ParseResult) -> str:
     lines.append("[Pending Interactions]")
     if result.pending_interactions:
         for interaction in result.pending_interactions:
-            lines.append(f"  ⚠️  {interaction}")
+            lines.append(f"  [!] {interaction}")
     else:
         lines.append("  (none)")
     lines.append("")
@@ -280,8 +283,8 @@ def format_diagnostics(result: ParseResult) -> str:
     # [Validation Result]
     lines.append("[Validation Result]")
     if result.is_valid:
-        lines.append("  ✅ VALID - Ready to execute")
+        lines.append("  [OK] VALID - Ready to execute")
     else:
-        lines.append(f"  ❌ INVALID - {result.error_count} error(s) found")
+        lines.append(f"  [X] INVALID - {result.error_count} error(s) found")
     
     return "\n".join(lines)

@@ -12,34 +12,34 @@ from .discovery import discover_repositories
 from .scanner import scan_repositories, scan_org_team_stats
 from .exporter import generate_markdown, generate_team_markdown, write_export_file, generate_highlights_markdown, DEFAULT_EXPORT_DIR
 from .highlights import generate_highlights
-from .args import parse_with_diagnostics, format_diagnostics
+from .args import create_parser, parse_with_diagnostics, format_diagnostics
 
 def main():
-    parser = argparse.ArgumentParser(description="GitHub contribution statistics")
-    parser.add_argument('--user', type=str, help='Target GitHub username (defaults to authenticated user)')
-    parser.add_argument('--personal', dest='personal', action='store_true', default=True, help='Include personal repos (default)')
-    parser.add_argument('--no-personal', dest='personal', action='store_false', help='Exclude personal repos')
-    parser.add_argument('--orgs', type=str, default='', help='Comma-separated organization names')
-    
-    # Date selection (yt-dlp style aliases)
-    parser.add_argument('--since', '--date-after', dest='since', type=str, help='Start date (YYYY-MM-DD, YYYYMMDD, or relative like "today-1week")')
-    parser.add_argument('--until', '--date-before', dest='until', type=str, help='End date (YYYY-MM-DD, YYYYMMDD, or relative like "today")')
-    
-    # choices removed to allow flexible formats like '3days', 'today-1week'
-    parser.add_argument('--range', type=str, help='Date range preset (e.g., today, week, 3days)')
-    parser.add_argument('--personal-limit', type=int, help='Max personal repos to scan (0=unlimited)')
-    parser.add_argument('--org-limit', type=int, help='Max repos per org to scan (0=unlimited)')
-    parser.add_argument('--all-branches', action='store_true', help='Scan all active branches (found via Events API) instead of just default branch')
-    parser.add_argument('--export-commits', action='store_true', help='Export commit messages to a Markdown file')
-    parser.add_argument('--full-message', action='store_true', help='Include full commit message body in export')
-    parser.add_argument('--output', '-o', type=str, help='Specify output filename for export')
-    parser.add_argument('--org-summary', type=str, metavar='ORG', help='Org summary mode: analyze a single organization (mutually exclusive with --orgs)')
-    parser.add_argument('--arena', action='store_true', help='Show competition rankings (requires --org-summary)')
-    parser.add_argument('--arena-top', type=int, default=5, metavar='N', help='Number of top contributors to show in arena rankings (0=all, default=5)')
-    parser.add_argument('--highlights', action='store_true', help='Show insights like longest streak and most productive day')
-    parser.add_argument('--exclude-noise', action='store_true', help='Exclude noisy files like lockfiles and generated artifacts')
-    parser.add_argument('--dry-run', action='store_true', help='Show parameter diagnostics without executing')
+    # Force UTF-8 stdout for emoji support on Windows
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except AttributeError:
+        pass
+
+    parser = create_parser()
     args = parser.parse_args()
+
+    # Dev mode: extensive diagnostics before execution
+    if args.dev:
+        print_styled("=== DEVELOPMENT MODE ===", Colors.HEADER, True)
+        # Quote arguments if they contain spaces to make the command valid for copy-pasting
+        quoted_argv = [f'"{arg}"' if ' ' in arg else arg for arg in sys.argv]
+        print(f"Command: {' '.join(quoted_argv)}\n")
+        
+        _, diag_result = parse_with_diagnostics()
+        print(format_diagnostics(diag_result))
+        
+        if not diag_result.is_valid:
+            print_styled("[X] Stopping execution due to configuration errors.", Colors.RED)
+            return
+
+        print_styled("[OK] Configuration valid. Proceeding with execution...", Colors.GREEN)
+        print("="*40 + "\n")
 
     # Dry-run mode: show diagnostics and exit
     if args.dry_run:
@@ -60,7 +60,7 @@ def main():
                 f.write(f"# Dry Run Diagnostics\n")
                 f.write(f"# Generated: {dt.datetime.now().isoformat()}\n\n")
                 f.write(output)
-            print(f"{Colors.GREEN}[✔]{Colors.ENDC} Dry-run diagnostics saved to: {filename}")
+            print(f"{Colors.GREEN}[OK]{Colors.ENDC} Dry-run diagnostics saved to: {filename}")
         else:
             print(output)
         return
@@ -120,9 +120,9 @@ def main():
     print(f"{Colors.CYAN}[...]{Colors.ENDC} Authenticating...", end="", flush=True)
     authenticated_user = get_current_user()
     if not authenticated_user:
-        print(f"\r{Colors.RED}[✗]{Colors.ENDC} Error: Run 'gh auth login' first.")
+        print(f"\r{Colors.RED}[X]{Colors.ENDC} Error: Run 'gh auth login' first.")
         sys.exit(1)
-    print(f"\r{Colors.GREEN}[✔]{Colors.ENDC} Authenticated as: {authenticated_user}")
+    print(f"\r{Colors.GREEN}[OK]{Colors.ENDC} Authenticated as: {authenticated_user}")
     
     # Determine target user
     target_user = args.user if args.user else authenticated_user
@@ -152,7 +152,7 @@ def main():
         org_repos = get_org_repos(org, limit=None)
         for r in org_repos:
             repos_to_scan.append((r['full_name'], r['name']))
-        print(f"\r{Colors.GREEN}[✔]{Colors.ENDC} Found {len(repos_to_scan)} repos in {org}")
+        print(f"\r{Colors.GREEN}[OK]{Colors.ENDC} Found {len(repos_to_scan)} repos in {org}")
         
         if not repos_to_scan:
             print_styled("No repositories found in the specified org.", Colors.WARNING)
@@ -180,7 +180,7 @@ def main():
             print_styled(f"\nGenerating org summary report...", Colors.CYAN)
             content = generate_org_summary_markdown(team_stats, since_date, until_date, org, args.arena, arena_top)
             filename = write_export_file(content, since_date, until_date, args.output)
-            print(f"{Colors.GREEN}[✔]{Colors.ENDC} Exported org summary to: {filename}")
+            print(f"{Colors.GREEN}[OK]{Colors.ENDC} Exported org summary to: {filename}")
         else:
             print(generate_org_summary_output(team_stats, since_date, until_date, org, args.arena, arena_top, use_colors=True))
         return
@@ -240,7 +240,7 @@ def main():
         final_content = "\n\n".join(parts)
         
         filename = write_export_file(final_content, since_date, until_date, args.output)
-        print(f"{Colors.GREEN}[✔]{Colors.ENDC} Exported all data to: {filename}")
+        print(f"{Colors.GREEN}[OK]{Colors.ENDC} Exported all data to: {filename}")
     else:
         # Console Mode: Print Table (Color) + Highlights + Messages (if any)
         print(generate_ascii_table(stats, since_date, until_date, use_colors=True))
