@@ -1,6 +1,8 @@
 import json
 import subprocess
 
+from .noise import is_noise_path
+
 def run_gh_cmd(args, silent=False):
     try:
         result = subprocess.run(['gh'] + args, capture_output=True, encoding='utf-8', check=True)
@@ -186,9 +188,23 @@ def get_repo_all_commits(repo_full_name, since_date, until_date):
             
     return commits
 
-def get_commit_stats(repo_full_name, sha):
+def get_commit_stats(repo_full_name, sha, exclude_noise=False):
     data = run_gh_cmd(['api', f'repos/{repo_full_name}/commits/{sha}'], silent=True)
-    if data and 'stats' in data:
+    if not data:
+        return 0, 0
+    if exclude_noise:
+        files = data.get('files') or []
+        if files:
+            added = 0
+            deleted = 0
+            for file_info in files:
+                filename = file_info.get('filename', '')
+                if filename and is_noise_path(filename):
+                    continue
+                added += file_info.get('additions', 0)
+                deleted += file_info.get('deletions', 0)
+            return added, deleted
+    if 'stats' in data:
         return data['stats'].get('additions', 0), data['stats'].get('deletions', 0)
     return 0, 0
 

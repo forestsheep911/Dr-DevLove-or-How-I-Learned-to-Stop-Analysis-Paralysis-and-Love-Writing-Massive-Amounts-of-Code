@@ -2,7 +2,7 @@ from collections import defaultdict
 from .api import get_repo_commits, get_commit_stats
 from .ui import Colors, print_progress, print_progress_done
 
-def scan_repositories(repos_to_scan, active_branches_map, username, since_date, until_date, collect_messages=False):
+def scan_repositories(repos_to_scan, active_branches_map, username, since_date, until_date, collect_messages=False, exclude_noise=False):
     """
     Scan the provided repositories for commits and statistics.
     
@@ -38,7 +38,7 @@ def scan_repositories(repos_to_scan, active_branches_map, username, since_date, 
             for commit_idx, commit in enumerate(commits, 1):
                 print_progress(idx, len(repos_to_scan), repo_full_name, f"fetching stats {commit_idx}/{total_commits}")
                 stats[repo_full_name]['commits'] += 1
-                added, deleted = get_commit_stats(repo_full_name, commit['sha'])
+                added, deleted = get_commit_stats(repo_full_name, commit['sha'], exclude_noise=exclude_noise)
                 stats[repo_full_name]['added'] += added
                 stats[repo_full_name]['deleted'] += deleted
                 
@@ -66,7 +66,7 @@ def scan_repositories(repos_to_scan, active_branches_map, username, since_date, 
     
     return stats, repos_with_commits
 
-def scan_org_team_stats(repos_to_scan, since_date, until_date, collect_messages=False):
+def scan_org_team_stats(repos_to_scan, since_date, until_date, collect_messages=False, exclude_noise=False):
     """
     Scan org repositories and aggregate stats by author.
     
@@ -106,7 +106,7 @@ def scan_org_team_stats(repos_to_scan, since_date, until_date, collect_messages=
                     author_login = commit.get('commit', {}).get('author', {}).get('name', 'unknown')
                 
                 # Get stats
-                added, deleted = get_commit_stats(repo_full_name, commit['sha'])
+                added, deleted = get_commit_stats(repo_full_name, commit['sha'], exclude_noise=exclude_noise)
                 
                 # Update team stats
                 team_stats[author_login]['commits'] += 1

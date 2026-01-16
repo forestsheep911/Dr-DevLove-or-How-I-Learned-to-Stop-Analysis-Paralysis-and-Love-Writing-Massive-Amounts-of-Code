@@ -97,6 +97,7 @@ gh-stats
 | 参数 | 类型 | 默认值 | 取值范围 | 说明 |
 |-----|------|--------|---------|------|
 | `--highlights` | flag | `false` | - | 显示亮点摘要 |
+| `--exclude-noise` | flag | `false` | - | 排除 lockfile 与生成物等杂质文件 |
 | `--dry-run` | flag | `false` | - | 诊断模式 |
 
 ---

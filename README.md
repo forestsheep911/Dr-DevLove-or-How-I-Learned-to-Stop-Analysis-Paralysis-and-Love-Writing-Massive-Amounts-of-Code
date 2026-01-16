@@ -91,8 +91,13 @@ poetry run gh-stats --range year --no-personal --org-limit 10
 | `--export-commits` | Export commit messages to a Markdown file | False |
 | `--full-message` | Include full commit body in export (default: title only) | False |
 | `--output` / `-o` | Specify output filename (defaults to `reports/` directory) | Auto-generated |
+| `--org-summary` | Org summary mode: analyze a single organization | None |
+| `--arena` | Show competition rankings (requires `--org-summary`) | False |
+| `--arena-top` | Number of top contributors to show in arena rankings | 5 |
 | `--org-users` | Team mode: compare all contributors in specified org(s) | False |
 | `--highlights` | Show insights (longest streak, most productive day, etc.) | False |
+| `--exclude-noise` | Exclude lockfiles and generated artifacts from stats | False |
+| `--dry-run` | Show parameter diagnostics without executing | False |
 | `--group-by` | Group export by `user` or `repo` (for `--org-users`) | `user` |
 
 ### 📅 Advanced Usage

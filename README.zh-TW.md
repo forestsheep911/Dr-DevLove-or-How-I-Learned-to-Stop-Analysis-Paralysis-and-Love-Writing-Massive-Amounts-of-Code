@@ -122,8 +122,13 @@ poetry run gh-stats --user colleague_name --orgs YOUR_COMPANY_ORG --range lastwe
 | `--export-commits` | 導出 Commit Message 到 Markdown 檔案 | False |
 | `--full-message` | 導出時包含完整的 Commit 正文（預設只導出標題） | False |
 | `--output` / `-o` | 指定導出檔案名（預設儲存到 `reports/` 目錄） | 自動產生 |
+| `--org-summary` | 組織匯總模式：分析單一組織 | 無 |
+| `--arena` | 顯示競爭排名（需要 `--org-summary`） | False |
+| `--arena-top` | 競爭排名顯示前 N 名 | 5 |
 | `--org-users` | 團隊模式：比較指定組織內所有貢獻者的統計 | False |
 | `--highlights` | 顯示洞察資訊（最長連續提交、最高產日期等） | False |
+| `--exclude-noise` | 排除 lockfile 與生成物等雜質文件 | False |
+| `--dry-run` | 僅顯示參數診斷、不執行統計 | False |
 | `--group-by` | 導出分組方式：`user`（按用戶）或 `repo`（按倉庫），用於 `--org-users` | `user` |
 
 ### 📅 高級用法

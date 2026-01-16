@@ -153,4 +153,6 @@ test_*.txt
 QUICK_REFERENCE.txt
 reports/
 test_output.txt
+sd2025.txt
+sd2025--exclude-noise.txt
 

@@ -106,6 +106,7 @@ PARAM_ENTITY_MAP = {
     # E_DISPLAY
     "highlights": Entity.E_DISPLAY,
     "dry_run": Entity.E_DISPLAY,
+    "exclude_noise": Entity.E_DISPLAY,
 }
 
 # 参数默认值表
@@ -127,6 +128,7 @@ PARAM_DEFAULTS = {
     "arena_top": 5,
     "highlights": False,
     "dry_run": False,
+    "exclude_noise": False,
 }
 
 
@@ -153,6 +155,7 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument('--arena', action='store_true', help='Show competition rankings (requires --org-summary)')
     parser.add_argument('--arena-top', type=int, default=5, metavar='N', help='Number of top contributors to show in arena rankings (0=all, default=5)')
     parser.add_argument('--highlights', action='store_true', help='Show insights like longest streak and most productive day')
+    parser.add_argument('--exclude-noise', action='store_true', help='Exclude noisy files like lockfiles and generated artifacts')
     parser.add_argument('--dry-run', action='store_true', help='Show parameter diagnostics without executing')
     
     return parser

@@ -2,6 +2,7 @@
 import sys
 import argparse
 import datetime
+import os
 import shutil
 
 from .api import get_current_user, get_org_repos
@@ -9,7 +10,7 @@ from .ui import Colors, print_styled, render_table, generate_ascii_table, genera
 from .date_parser import parse_date_range, parse_relative_date
 from .discovery import discover_repositories
 from .scanner import scan_repositories, scan_org_team_stats
-from .exporter import generate_markdown, generate_team_markdown, write_export_file, generate_highlights_markdown
+from .exporter import generate_markdown, generate_team_markdown, write_export_file, generate_highlights_markdown, DEFAULT_EXPORT_DIR
 from .highlights import generate_highlights
 from .args import parse_with_diagnostics, format_diagnostics
 
@@ -36,6 +37,7 @@ def main():
     parser.add_argument('--arena', action='store_true', help='Show competition rankings (requires --org-summary)')
     parser.add_argument('--arena-top', type=int, default=5, metavar='N', help='Number of top contributors to show in arena rankings (0=all, default=5)')
     parser.add_argument('--highlights', action='store_true', help='Show insights like longest streak and most productive day')
+    parser.add_argument('--exclude-noise', action='store_true', help='Exclude noisy files like lockfiles and generated artifacts')
     parser.add_argument('--dry-run', action='store_true', help='Show parameter diagnostics without executing')
     args = parser.parse_args()
 
@@ -45,9 +47,15 @@ def main():
         output = format_diagnostics(diag_result)
         if args.output:
             import datetime as dt
-            filename = args.output
-            if not filename.endswith('.txt') and not filename.endswith('.md'):
-                filename += '.txt'
+            output_name = args.output
+            if not output_name.endswith('.txt') and not output_name.endswith('.md'):
+                output_name += '.txt'
+            dir_part = os.path.dirname(output_name)
+            file_part = os.path.basename(output_name)
+            target_dir = dir_part if dir_part else DEFAULT_EXPORT_DIR
+            if target_dir and not os.path.exists(target_dir):
+                os.makedirs(target_dir)
+            filename = os.path.join(target_dir, file_part) if target_dir else file_part
             with open(filename, 'w', encoding='utf-8') as f:
                 f.write(f"# Dry Run Diagnostics\n")
                 f.write(f"# Generated: {dt.datetime.now().isoformat()}\n\n")
@@ -105,6 +113,7 @@ def main():
     print(f"Range: {since_date} to {until_date}")
     if orgs: print(f"Orgs: {', '.join(orgs)}")
     print(f"Personal: {'Yes' if args.personal else 'No'}")
+    print(f"Exclude Noise: {'Yes' if args.exclude_noise else 'No'}")
     print()
 
     # Auth
@@ -154,7 +163,8 @@ def main():
             repos_to_scan=repos_to_scan,
             since_date=since_date,
             until_date=until_date,
-            collect_messages=(args.export_commits or args.full_message or args.output is not None)
+            collect_messages=(args.export_commits or args.full_message or args.output is not None),
+            exclude_noise=args.exclude_noise
         )
         
         if not team_stats:
@@ -197,7 +207,8 @@ def main():
         username=target_user,
         since_date=since_date,
         until_date=until_date,
-        collect_messages=(args.export_commits or args.full_message or args.output is not None)
+        collect_messages=(args.export_commits or args.full_message or args.output is not None),
+        exclude_noise=args.exclude_noise
     )
 
     # 3. Output Phase
