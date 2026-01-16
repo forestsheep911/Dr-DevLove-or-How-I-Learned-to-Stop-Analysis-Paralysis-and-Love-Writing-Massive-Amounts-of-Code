@@ -96,18 +96,23 @@ def generate_highlights(stats):
         }
 
     # 3. Favorite Weekday
-    weekday_counts = defaultdict(int)
+    weekday_changes = defaultdict(int)
+    weekday_commits = defaultdict(int)
     for d in all_dates:
         # weekday(): 0 = Mon, 6 = Sun
-        weekday_counts[d['datetime'].weekday()] += 1
+        weekday = d['datetime'].weekday()
+        weekday_commits[weekday] += 1
+        weekday_changes[weekday] += (d['added'] + d['deleted'])
         
-    if weekday_counts:
-        best_weekday_idx = max(weekday_counts.items(), key=lambda x: x[1])[0]
+    if weekday_changes:
+        # Prioritize total changes over commit count
+        best_weekday_idx = max(weekday_changes.items(), key=lambda x: x[1])[0]
         weekday_name = calendar.day_name[best_weekday_idx]
         highlights['favorite_weekday'] = {
             'day': weekday_name,
-            'commits': weekday_counts[best_weekday_idx],
-            'total_commits': len(all_dates)
+            'changes': weekday_changes[best_weekday_idx],
+            'total_changes': sum(weekday_changes.values()),
+            'commits': weekday_commits[best_weekday_idx]
         }
         
     # 4. Repo Love

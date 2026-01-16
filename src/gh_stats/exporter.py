@@ -248,8 +248,8 @@ def generate_highlights_markdown(highlights):
         
     if 'favorite_weekday' in highlights:
         w = highlights['favorite_weekday']
-        pct = w['commits'] / w['total_commits'] * 100
-        md.append(f"- **📅 Favorite Weekday:** {w['day']} ({pct:.0f}% of commits)")
+        pct = w['changes'] / w['total_changes'] * 100 if w.get('total_changes') else 0
+        md.append(f"- **📅 Favorite Weekday:** {w['day']} ({pct:.0f}% of changes)")
         
     if 'best_repo' in highlights:
         r = highlights['best_repo']
