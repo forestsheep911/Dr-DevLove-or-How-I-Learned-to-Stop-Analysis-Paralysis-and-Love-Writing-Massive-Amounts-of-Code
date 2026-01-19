@@ -156,3 +156,7 @@ test_output.txt
 sd2025.txt
 sd2025--exclude-noise.txt
 
+# Temporary dev outputs
+dev_output*.txt
+dev_report_*.md
+*.log
