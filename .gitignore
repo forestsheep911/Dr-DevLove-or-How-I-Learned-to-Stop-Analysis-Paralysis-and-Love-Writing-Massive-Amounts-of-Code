@@ -160,3 +160,15 @@ sd2025--exclude-noise.txt
 dev_output*.txt
 dev_report_*.md
 *.log
+
+# Web frontend
+web/node_modules/
+web/.next/
+web/out/
+web/.turbo/
+web/.vercel/
+web/.env.local
+web/.env.*.local
+
+# Generated static files (copied from web/out/)
+src/gh_stats/static/

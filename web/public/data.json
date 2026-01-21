@@ -1,0 +1,60 @@
+{
+  "meta": {
+    "user": "demo-user",
+    "dateRange": {
+      "since": "2026-01-01",
+      "until": "2026-01-21"
+    },
+    "generatedAt": "2026-01-21T15:30:00.000Z",
+    "mode": "personal"
+  },
+  "summary": {
+    "totalCommits": 127,
+    "totalAdded": 4523,
+    "totalDeleted": 1289,
+    "netGrowth": 3234,
+    "activeDays": 18,
+    "activeRepos": 5
+  },
+  "repos": [
+    {"name": "demo-user/awesome-project", "commits": 45, "added": 2100, "deleted": 450},
+    {"name": "demo-user/api-server", "commits": 32, "added": 1200, "deleted": 380},
+    {"name": "demo-user/frontend-app", "commits": 28, "added": 823, "deleted": 289},
+    {"name": "demo-user/cli-tools", "commits": 15, "added": 300, "deleted": 120},
+    {"name": "demo-user/docs-site", "commits": 7, "added": 100, "deleted": 50}
+  ],
+  "timeline": [
+    {"date": "2026-01-01", "commits": 5, "added": 200, "deleted": 50},
+    {"date": "2026-01-02", "commits": 8, "added": 350, "deleted": 80},
+    {"date": "2026-01-03", "commits": 3, "added": 100, "deleted": 20},
+    {"date": "2026-01-06", "commits": 12, "added": 500, "deleted": 150},
+    {"date": "2026-01-07", "commits": 9, "added": 400, "deleted": 100},
+    {"date": "2026-01-08", "commits": 15, "added": 600, "deleted": 180},
+    {"date": "2026-01-09", "commits": 6, "added": 250, "deleted": 70},
+    {"date": "2026-01-10", "commits": 4, "added": 150, "deleted": 40},
+    {"date": "2026-01-13", "commits": 11, "added": 480, "deleted": 120},
+    {"date": "2026-01-14", "commits": 8, "added": 320, "deleted": 90},
+    {"date": "2026-01-15", "commits": 14, "added": 550, "deleted": 160},
+    {"date": "2026-01-16", "commits": 7, "added": 280, "deleted": 75},
+    {"date": "2026-01-17", "commits": 10, "added": 400, "deleted": 100},
+    {"date": "2026-01-20", "commits": 9, "added": 350, "deleted": 85},
+    {"date": "2026-01-21", "commits": 6, "added": 193, "deleted": 69}
+  ],
+  "highlights": {
+    "streak": {"days": 5, "start": "2026-01-06", "end": "2026-01-10"},
+    "bestDay": {"date": "2026-01-08", "commits": 15, "changes": 780},
+    "favoriteWeekday": {"day": "周三", "dayIndex": 2, "commits": 35, "changes": 1200},
+    "bestRepo": {"name": "demo-user/awesome-project", "commits": 45},
+    "longestBreak": {"days": 2, "start": "2026-01-04", "end": "2026-01-05"}
+  },
+  "portrait": {
+    "weekdayStats": {"0": 25, "1": 18, "2": 35, "3": 22, "4": 15, "5": 8, "6": 4},
+    "hourStats": {"9": 12, "10": 18, "11": 15, "14": 22, "15": 25, "16": 20, "17": 10, "21": 5},
+    "avgLinesPerCommit": 45.7,
+    "repoChampions": {
+      "growth": {"name": "demo-user/awesome-project", "value": 1650},
+      "refactor": {"name": "demo-user/api-server", "value": 1580},
+      "slimming": {"name": "demo-user/docs-site", "value": -50}
+    }
+  }
+}

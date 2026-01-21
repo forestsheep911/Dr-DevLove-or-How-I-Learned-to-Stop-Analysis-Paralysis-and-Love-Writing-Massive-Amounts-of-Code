@@ -19,6 +19,9 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/gh_stats"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"src/gh_stats/static" = "gh_stats/static"
+
 [dependency-groups]
 dev = [
     "pytest>=8.0",

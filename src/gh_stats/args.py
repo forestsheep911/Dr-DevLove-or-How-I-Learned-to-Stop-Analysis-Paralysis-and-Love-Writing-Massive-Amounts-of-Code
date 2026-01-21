@@ -31,6 +31,7 @@ class Entity(Enum):
     E_ORG_SUMMARY = "E_ORG_SUMMARY"  # 组织汇总模式
     E_ARENA = "E_ARENA"         # 竞技场/排名相关
     E_DISPLAY = "E_DISPLAY"     # 显示/输出相关
+    E_SERVE = "E_SERVE"         # Web 服务器相关
 
 
 @dataclass
@@ -108,6 +109,11 @@ PARAM_ENTITY_MAP = {
     "dry_run": Entity.E_DISPLAY,
     "exclude_noise": Entity.E_DISPLAY,
     "dev": Entity.E_DISPLAY,
+    
+    # E_SERVE
+    "serve": Entity.E_SERVE,
+    "port": Entity.E_SERVE,
+    "no_open": Entity.E_SERVE,
 }
 
 # 参数默认值表
@@ -131,6 +137,9 @@ PARAM_DEFAULTS = {
     "dry_run": False,
     "exclude_noise": False,
     "dev": False,
+    "serve": False,
+    "port": 8080,
+    "no_open": False,
 }
 
 
@@ -160,6 +169,11 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument('--exclude-noise', action='store_true', help='Exclude noisy files like lockfiles and generated artifacts')
     parser.add_argument('--dry-run', action='store_true', help='Show parameter diagnostics without executing')
     parser.add_argument('--dev', action='store_true', help='Enable development diagnostic mode: print command, parsing details, and errors before execution')
+    
+    # Web server options
+    parser.add_argument('--serve', action='store_true', help='Start a local web server to display stats with charts')
+    parser.add_argument('--port', type=int, default=8080, help='Port for the web server (default: 8080)')
+    parser.add_argument('--no-open', action='store_true', help='Do not automatically open browser when starting server')
     
     return parser
 

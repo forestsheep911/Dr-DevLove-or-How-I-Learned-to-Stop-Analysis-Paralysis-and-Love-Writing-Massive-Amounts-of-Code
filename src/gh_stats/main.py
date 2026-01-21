@@ -13,6 +13,8 @@ from .scanner import scan_repositories, scan_org_team_stats
 from .exporter import generate_markdown, generate_team_markdown, write_export_file, generate_highlights_markdown, DEFAULT_EXPORT_DIR
 from .highlights import generate_highlights
 from .args import create_parser, parse_with_diagnostics, format_diagnostics
+from .json_exporter import export_to_json, generate_arena_data
+from .portrait import generate_team_portrait, generate_repo_portrait
 
 def main():
     # Force UTF-8 stdout for emoji support on Windows
@@ -186,6 +188,53 @@ def main():
         
         arena_top = args.arena_top if args.arena_top > 0 else None  # None means all
         
+        # Serve mode for org-summary
+        if args.serve:
+            print_styled(f"\nPreparing web dashboard...", Colors.CYAN)
+            
+            # Generate portrait data
+            team_portrait = generate_team_portrait(team_stats)
+            repo_portrait = generate_repo_portrait(team_stats, len(repos_to_scan))
+            
+            # Combine portrait data
+            portrait_data = {
+                'weekday_stats': team_portrait['weekday_stats'],
+                'hour_stats': team_portrait['hour_stats'],
+                'avg_lines_per_commit': team_portrait['avg_lines_per_commit'],
+                'net_growth_champion': repo_portrait['net_growth_champion'],
+                'refactor_champion': repo_portrait['refactor_champion'],
+                'slimming_champion': repo_portrait['slimming_champion'],
+            }
+            
+            # Generate arena data if enabled
+            arena_data = None
+            if args.arena:
+                arena_data = generate_arena_data(team_stats, arena_top)
+            
+            # Export to JSON
+            data_json = export_to_json(
+                stats={},
+                since_date=since_date,
+                until_date=until_date,
+                user=authenticated_user,
+                highlights=None,
+                portrait=portrait_data,
+                team_stats=team_stats,
+                arena=arena_data,
+                org=org,
+            )
+            
+            # Start server
+            from .server import start_server, start_fallback_server, get_static_dir
+            try:
+                static_dir = get_static_dir()
+                start_server(data_json, port=args.port, open_browser=not args.no_open)
+            except FileNotFoundError as e:
+                print_styled(f"\nNote: {e}", Colors.WARNING)
+                print_styled("Starting fallback server with basic HTML...", Colors.CYAN)
+                start_fallback_server(data_json, port=args.port, open_browser=not args.no_open)
+            return
+        
         if args.output:
             print_styled(f"\nGenerating org summary report...", Colors.CYAN)
             content = generate_org_summary_markdown(team_stats, since_date, until_date, org, args.arena, arena_top)
@@ -227,7 +276,7 @@ def main():
 
     # 3. Output Phase
     highlights = None
-    if args.highlights:
+    if args.highlights or args.serve:
         print_styled(f"\nComputing highlights...", Colors.CYAN)
         highlights = generate_highlights(stats)
 
@@ -235,6 +284,58 @@ def main():
     # Note: We don't pass highlights here, we handle them separately for flexibility
     if args.export_commits or args.full_message:
         msg_content = generate_markdown(stats, since_date, until_date, full_message=args.full_message)
+
+    # Serve mode for personal stats
+    if args.serve:
+        print_styled(f"\nPreparing web dashboard...", Colors.CYAN)
+        
+        # Generate portrait data (simplified for personal mode)
+        from collections import defaultdict
+        weekday_stats = defaultdict(int)
+        hour_stats = defaultdict(int)
+        total_commits = 0
+        total_changes = 0
+        
+        for repo_data in stats.values():
+            total_commits += repo_data['commits']
+            total_changes += repo_data['added'] + repo_data['deleted']
+            
+            for msg in repo_data.get('messages', []):
+                if 'date' in msg and isinstance(msg['date'], datetime.datetime):
+                    dt = msg['date']
+                    if dt.tzinfo is not None:
+                        dt = dt.astimezone()
+                    weekday_stats[dt.weekday()] += 1
+                    hour_stats[dt.hour] += 1
+        
+        avg_lines = (total_changes / total_commits) if total_commits > 0 else 0
+        
+        portrait_data = {
+            'weekday_stats': dict(weekday_stats),
+            'hour_stats': dict(hour_stats),
+            'avg_lines_per_commit': avg_lines,
+        }
+        
+        # Export to JSON
+        data_json = export_to_json(
+            stats=stats,
+            since_date=since_date,
+            until_date=until_date,
+            user=target_user,
+            highlights=highlights,
+            portrait=portrait_data,
+        )
+        
+        # Start server
+        from .server import start_server, start_fallback_server, get_static_dir
+        try:
+            static_dir = get_static_dir()
+            start_server(data_json, port=args.port, open_browser=not args.no_open)
+        except FileNotFoundError as e:
+            print_styled(f"\nNote: {e}", Colors.WARNING)
+            print_styled("Starting fallback server with basic HTML...", Colors.CYAN)
+            start_fallback_server(data_json, port=args.port, open_browser=not args.no_open)
+        return
 
     if args.output:
         # File Mode: Combine Markdown Table + Highlights + Messages
