@@ -432,7 +432,8 @@ def _render_console_portraits(lines, team_stats, all_repos, use_colors):
         
     # Granularity
     lines.append(f"  {c('📏 Commit Granularity:', Colors.BOLD)}")
-    lines.append(f"    • Avg Lines/Commit: {c(f'{team_portrait['avg_lines_per_commit']:.1f}', Colors.CYAN)}")
+    avg_lines = team_portrait['avg_lines_per_commit']
+    lines.append(f"    • Avg Lines/Commit: {c(f'{avg_lines:.1f}', Colors.CYAN)}")
 
     # Repo Portrait
     from .portrait import generate_repo_portrait
@@ -443,11 +444,13 @@ def _render_console_portraits(lines, team_stats, all_repos, use_colors):
     
     r = repo_portrait
     if r['net_growth_champion'][0]:
-        lines.append(f"  • {c('🌲 Growth Champion:', Colors.BOLD)}   {r['net_growth_champion'][0]} ({c(f'+{r['net_growth_champion'][1]}', Colors.GREEN)} net)")
+        growth_val = r['net_growth_champion'][1]
+        lines.append(f"  • {c('🌲 Growth Champion:', Colors.BOLD)}   {r['net_growth_champion'][0]} ({c(f'+{growth_val}', Colors.GREEN)} net)")
     if r['refactor_champion'][0]:
         lines.append(f"  • {c('🔧 Refactor Champion:', Colors.BOLD)} {r['refactor_champion'][0]} ({c(r['refactor_champion'][1], Colors.CYAN)} changes)")
     if r['slimming_champion'][0]:
-        lines.append(f"  • {c('📉 Slimming Champion:', Colors.BOLD)} {r['slimming_champion'][0]} ({c(f'{r['slimming_champion'][1]}', Colors.RED)} net)")
+        slimming_val = r['slimming_champion'][1]
+        lines.append(f"  • {c('📉 Slimming Champion:', Colors.BOLD)} {r['slimming_champion'][0]} ({c(f'{slimming_val}', Colors.RED)} net)")
 
 
 def generate_org_summary_output(team_stats, since_date, until_date, org_name, show_arena=False, arena_top=5, use_colors=True):
