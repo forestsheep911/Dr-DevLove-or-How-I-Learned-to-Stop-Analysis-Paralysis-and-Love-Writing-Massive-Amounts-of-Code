@@ -23,10 +23,14 @@ def generate_highlights(stats):
         repo_commits[repo] = data['commits']
         for msg in data.get('messages', []):
             if 'date' in msg and msg['date']:
+                dt = msg['date']
+                # Convert UTC to local timezone if timezone-aware
+                if hasattr(dt, 'tzinfo') and dt.tzinfo is not None:
+                    dt = dt.astimezone()  # Converts to system local timezone
                 all_dates.append({
-                    'date': msg['date'].date(),
+                    'date': dt.date(),
                     'repo': repo,
-                    'datetime': msg['date'],
+                    'datetime': dt,
                     'added': msg.get('added', 0),
                     'deleted': msg.get('deleted', 0)
                 })

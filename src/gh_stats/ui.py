@@ -402,6 +402,54 @@ def _calculate_participant_breakdown(team_stats, since_date, until_date):
     return result
 
 
+def _render_console_portraits(lines, team_stats, all_repos, use_colors):
+    """Helper to render portraits to console."""
+    def c(text, color):
+        return f"{color}{text}{Colors.ENDC}" if use_colors else str(text)
+
+    # Team Portrait
+    from .portrait import generate_team_portrait
+    team_portrait = generate_team_portrait(team_stats)
+    
+    lines.append("")
+    lines.append(f"{c('🎨 Team Portrait:', Colors.BOLD)}")
+    
+    # Weekday Stats
+    lines.append(f"  {c('📅 Work Week Rhythm:', Colors.BOLD)}")
+    days_map = {0: 'Mon', 1: 'Tue', 2: 'Wed', 3: 'Thu', 4: 'Fri', 5: 'Sat', 6: 'Sun'}
+    sorted_days = sorted(team_portrait['weekday_stats'].items(), key=lambda x: x[1], reverse=True)
+    if sorted_days:
+        best_day = sorted_days[0]
+        lines.append(f"    • Most Active: {c(days_map[best_day[0]], Colors.CYAN)} ({best_day[1]} commits)")
+    
+    # Hour Stats
+    lines.append(f"  {c('⏰ Peak Hours:', Colors.BOLD)}")
+    sorted_hours = sorted(team_portrait['hour_stats'].items(), key=lambda x: x[1], reverse=True)
+    if sorted_hours:
+        top_3_hours = sorted_hours[:3]
+        hours_str = ", ".join([f"{h:02d}:00" for h, count in top_3_hours])
+        lines.append(f"    • Top Times: {c(hours_str, Colors.CYAN)}")
+        
+    # Granularity
+    lines.append(f"  {c('📏 Commit Granularity:', Colors.BOLD)}")
+    lines.append(f"    • Avg Lines/Commit: {c(f'{team_portrait['avg_lines_per_commit']:.1f}', Colors.CYAN)}")
+
+    # Repo Portrait
+    from .portrait import generate_repo_portrait
+    repo_portrait = generate_repo_portrait(team_stats, len(all_repos)) 
+    
+    lines.append("")
+    lines.append(f"{c('🖼️ Repo Portrait:', Colors.BOLD)}")
+    
+    r = repo_portrait
+    if r['net_growth_champion'][0]:
+        lines.append(f"  • {c('🌲 Growth Champion:', Colors.BOLD)}   {r['net_growth_champion'][0]} ({c(f'+{r['net_growth_champion'][1]}', Colors.GREEN)} net)")
+    if r['refactor_champion'][0]:
+        lines.append(f"  • {c('🔧 Refactor Champion:', Colors.BOLD)} {r['refactor_champion'][0]} ({c(r['refactor_champion'][1], Colors.CYAN)} changes)")
+    if r['slimming_champion'][0]:
+        lines.append(f"  • {c('📉 Slimming Champion:', Colors.BOLD)} {r['slimming_champion'][0]} ({c(f'{r['slimming_champion'][1]}', Colors.RED)} net)")
+
+
 def generate_org_summary_output(team_stats, since_date, until_date, org_name, show_arena=False, arena_top=5, use_colors=True):
     """Generate console output for org-summary mode."""
     lines = []
@@ -443,7 +491,10 @@ def generate_org_summary_output(team_stats, since_date, until_date, org_name, sh
             primary_str = f" → {c(f'@{primary[0]}', Colors.CYAN)} ({primary[1]:.0f}%)"
         lines.append(f"  • {repo}: {commits} commits, {contrib_count} contributors{primary_str}")
     
-    # 3. Participant Breakdown
+    # 3. Portraits (Moved here)
+    _render_console_portraits(lines, team_stats, all_repos, use_colors)
+
+    # 4. Participant Breakdown
     lines.append("")
     lines.append(f"{c('👥 Participant Breakdown:', Colors.BOLD)}")
     participant_data = _calculate_participant_breakdown(team_stats, since_date, until_date)
@@ -466,6 +517,17 @@ def generate_org_summary_output(team_stats, since_date, until_date, org_name, sh
         lines.append(f"\n  {c('🏆 Commit Champions:', Colors.BOLD)}")
         for i, (user, count) in enumerate(top_n(rankings['commit_ranking']), 1):
             lines.append(f"    {i}. @{user}: {count} commits")
+            
+        # Repo Hunter (New)
+        lines.append(f"\n  {c('🐙 Repo Hunter (Project Coverage):', Colors.BOLD)}")
+        for i, (user, count) in enumerate(top_n(rankings['active_repos_ranking']), 1):
+            lines.append(f"    {i}. @{user}: {c(count, Colors.CYAN)} repos")
+        
+        # Net Growth (New)
+        lines.append(f"\n  {c('🌲 Net Code Growth:', Colors.BOLD)}")
+        for i, (user, net) in enumerate(top_n(rankings['net_growth_ranking']), 1):
+            color = Colors.GREEN if net >= 0 else Colors.RED
+            lines.append(f"    {i}. @{user}: {c(f'{net:+}', color)} lines")
         
         # Code Additions
         lines.append(f"\n  {c('📈 Code Additions:', Colors.BOLD)}")
@@ -487,11 +549,18 @@ def generate_org_summary_output(team_stats, since_date, until_date, org_name, sh
             lines.append(f"\n  {c('🔥 Longest Streak:', Colors.BOLD)}")
             for i, (user, days, start, end) in enumerate(top_n(rankings['longest_streak_ranking']), 1):
                 lines.append(f"    {i}. @{user}: {days} days ({start} ~ {end})")
+                
+        # Active Days (New)
+        lines.append(f"\n  {c('📅 Most Consistent (Active Days):', Colors.BOLD)}")
+        for i, (user, days) in enumerate(top_n(rankings['active_days_ranking']), 1):
+            lines.append(f"    {i}. @{user}: {c(days, Colors.CYAN)} days")
         
         # Avg Commit Size
         lines.append(f"\n  {c('📊 Avg Commit Size (lines/commit):', Colors.BOLD)}")
         for i, (user, avg) in enumerate(top_n(rankings['avg_commit_size_ranking']), 1):
             lines.append(f"    {i}. @{user}: {avg} lines")
+
+
     
     return "\n".join(lines)
 
@@ -535,8 +604,63 @@ def generate_org_summary_markdown(team_stats, since_date, until_date, org_name, 
             primary_str = f"@{primary[0]} ({primary[1]:.0f}%)"
         lines.append(f"| {repo} | {commits} | {contrib_count} | {primary_str} |")
     lines.append("")
+
+    # 3. Portraits (Moved here)
+    # Team Portrait
+    from .portrait import generate_team_portrait
+    team_portrait = generate_team_portrait(team_stats)
     
-    # 3. Participant Breakdown
+    lines.append("## 🎨 Team Portrait\n")
+    
+    # Weekday Stats
+    lines.append("### 📅 Work Week Rhythm\n")
+    days_map = {0: 'Mon', 1: 'Tue', 2: 'Wed', 3: 'Thu', 4: 'Fri', 5: 'Sat', 6: 'Sun'}
+    sorted_days = sorted(team_portrait['weekday_stats'].items(), key=lambda x: x[1], reverse=True)
+    
+    if sorted_days:
+        lines.append("| Weekday | Commits |")
+        lines.append("|:--------|--------:|")
+        for day, count in sorted_days:
+            lines.append(f"| {days_map[day]} | {count} |")
+        lines.append("")
+    
+    # Hour Stats
+    lines.append("### ⏰ Peak Hours\n")
+    sorted_hours = sorted(team_portrait['hour_stats'].items(), key=lambda x: x[1], reverse=True)
+    
+    if sorted_hours:
+        lines.append("| Hour | Commits |")
+        lines.append("|-----:|--------:|")
+        for hour, count in sorted_hours[:5]: # Top 5 hours
+            lines.append(f"| {hour:02d}:00 | {count} |")
+        lines.append("")
+        
+    lines.append(f"- **Avg Lines/Commit:** {team_portrait['avg_lines_per_commit']:.1f}")
+    lines.append("")
+
+    # Repo Portrait
+    from .portrait import generate_repo_portrait
+    repo_portrait = generate_repo_portrait(team_stats, len(all_repos)) 
+    
+    lines.append("## 🖼️ Repo Portrait\n")
+    r = repo_portrait
+    
+    lines.append("| Category | Repository | Metric |")
+    lines.append("|:---------|:-----------|:-------|")
+    
+    if r['net_growth_champion'][0]:
+        lines.append(f"| 🌲 Growth Champion | {r['net_growth_champion'][0]} | +{r['net_growth_champion'][1]} lines |")
+        
+    if r['refactor_champion'][0]:
+        lines.append(f"| 🔧 Refactor Champion | {r['refactor_champion'][0]} | {r['refactor_champion'][1]} changes |")
+        
+    if r['slimming_champion'][0]:
+        lines.append(f"| 📉 Slimming Champion | {r['slimming_champion'][0]} | {r['slimming_champion'][1]} lines |")
+        
+    lines.append(f"| 💤 Idle Repos | (Calculated vs Active) | {r['idle_repos_count']} repos |")
+    lines.append("")
+    
+    # 4. Participant Breakdown
     lines.append("## 👥 Participant Breakdown\n")
     lines.append("| Contributor | Projects | Commits | Active Days |")
     lines.append("|:------------|:---------|--------:|:------------|")
@@ -563,6 +687,22 @@ def generate_org_summary_markdown(team_stats, since_date, until_date, org_name, 
         lines.append("|-----:|:------------|--------:|")
         for i, (user, count) in enumerate(top_n(rankings['commit_ranking']), 1):
             lines.append(f"| {i} | @{user} | {count} |")
+        lines.append("")
+        
+        # Repo Hunter (New)
+        lines.append("### 🐙 Repo Hunter (Project Coverage)\n")
+        lines.append("| Rank | Contributor | Active Repos |")
+        lines.append("|-----:|:------------|-------------:|")
+        for i, (user, count) in enumerate(top_n(rankings['active_repos_ranking']), 1):
+            lines.append(f"| {i} | @{user} | {count} |")
+        lines.append("")
+        
+        # Net Growth (New)
+        lines.append("### 🌲 Net Code Growth\n")
+        lines.append("| Rank | Contributor | Net Growth |")
+        lines.append("|-----:|:------------|-----------:|")
+        for i, (user, net) in enumerate(top_n(rankings['net_growth_ranking']), 1):
+            lines.append(f"| {i} | @{user} | {net:+} |")
         lines.append("")
         
         # Code Additions
@@ -597,6 +737,14 @@ def generate_org_summary_markdown(team_stats, since_date, until_date, org_name, 
             for i, (user, days, start, end) in enumerate(top_n(rankings['longest_streak_ranking']), 1):
                 lines.append(f"| {i} | @{user} | {days} | {start} ~ {end} |")
             lines.append("")
+            
+        # Active Days (New)
+        lines.append("### 📅 Most Consistent (Active Days)\n")
+        lines.append("| Rank | Contributor | Days |")
+        lines.append("|-----:|:------------|-----:|")
+        for i, (user, days) in enumerate(top_n(rankings['active_days_ranking']), 1):
+            lines.append(f"| {i} | @{user} | {days} |")
+        lines.append("")
         
         # Avg Commit Size
         lines.append("### 📊 Avg Commit Size\n")
@@ -605,6 +753,8 @@ def generate_org_summary_markdown(team_stats, since_date, until_date, org_name, 
         for i, (user, avg) in enumerate(top_n(rankings['avg_commit_size_ranking']), 1):
             lines.append(f"| {i} | @{user} | {avg} |")
         lines.append("")
+
+
     
     return "\n".join(lines)
 

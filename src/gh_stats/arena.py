@@ -19,6 +19,9 @@ def calculate_user_streak(messages, since_date, until_date):
         if 'date' in msg:
             d = msg['date']
             if isinstance(d, datetime.datetime):
+                # Convert UTC to local timezone if timezone-aware
+                if d.tzinfo is not None:
+                    d = d.astimezone()  # Converts to system local timezone
                 dates.add(d.date())
             elif isinstance(d, datetime.date):
                 dates.add(d)
@@ -95,6 +98,12 @@ def generate_arena_rankings(team_stats, since_date, until_date):
         key=lambda x: x[1], reverse=True
     )
     
+    # Net growth ranking (added - deleted, descending)
+    rankings['net_growth_ranking'] = sorted(
+        [(user, data['added'] - data['deleted']) for user, data in team_stats.items()],
+        key=lambda x: x[1], reverse=True
+    )
+    
     # Longest streak ranking
     streak_data = []
     for user, data in team_stats.items():
@@ -110,5 +119,26 @@ def generate_arena_rankings(team_stats, since_date, until_date):
             avg = (data['added'] + data['deleted']) / data['commits']
             avg_size_data.append((user, round(avg, 1)))
     rankings['avg_commit_size_ranking'] = sorted(avg_size_data, key=lambda x: x[1], reverse=True)
+
+    # Active Repos ranking (Broadest Impact)
+    rankings['active_repos_ranking'] = sorted(
+        [(user, len(data.get('repos', {}))) for user, data in team_stats.items()],
+        key=lambda x: x[1], reverse=True
+    )
+
+    # Active Days ranking (Consistency)
+    active_days_data = []
+    for user, data in team_stats.items():
+        user_dates = set()
+        for msg in data.get('messages', []):
+            if 'date' in msg:
+                d = msg['date']
+                # Handle both datetime and date objects
+                if hasattr(d, 'date'):
+                    user_dates.add(d.date())
+                else:
+                    user_dates.add(d)
+        active_days_data.append((user, len(user_dates)))
+    rankings['active_days_ranking'] = sorted(active_days_data, key=lambda x: x[1], reverse=True)
     
     return rankings

@@ -48,7 +48,7 @@ def scan_repositories(repos_to_scan, active_branches_map, username, since_date, 
                 
                 if author_date_str:
                     try:
-                        dt = datetime.datetime.fromisoformat(author_date_str.replace('Z', '+00:00'))
+                        dt = datetime.datetime.fromisoformat(author_date_str.replace('Z', '+00:00')).astimezone()
                         date_obj = dt
                     except ValueError:
                         date_obj = datetime.datetime.combine(since_date, datetime.time.min)
@@ -122,7 +122,7 @@ def scan_org_team_stats(repos_to_scan, since_date, until_date, collect_messages=
                 
                 if author_date_str:
                     try:
-                        dt = datetime.datetime.fromisoformat(author_date_str.replace('Z', '+00:00'))
+                        dt = datetime.datetime.fromisoformat(author_date_str.replace('Z', '+00:00')).astimezone()
                         date_obj = dt
                     except ValueError:
                         date_obj = datetime.datetime.combine(since_date, datetime.time.min)
