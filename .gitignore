@@ -92,9 +92,9 @@ ipython_config.py
 #   However, in case of collaboration, if you do not want to lock specific dependencies:
 # Pipfile.lock
 
-# poetry
-#   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
-# poetry.lock
+# uv
+#   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
+# uv.lock
 
 # pdm
 #   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
