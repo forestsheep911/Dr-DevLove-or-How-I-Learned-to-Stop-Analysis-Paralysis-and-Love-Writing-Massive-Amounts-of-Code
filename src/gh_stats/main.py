@@ -15,6 +15,7 @@ from .highlights import generate_highlights
 from .args import create_parser, parse_with_diagnostics, format_diagnostics
 from .json_exporter import export_to_json, generate_arena_data
 from .portrait import generate_team_portrait, generate_repo_portrait
+from .server import start_server, start_fallback_server, get_static_dir
 
 def main():
     # Force UTF-8 stdout for emoji support on Windows
@@ -25,6 +26,10 @@ def main():
 
     parser = create_parser()
     args = parser.parse_args()
+
+    # Auto-enable --serve when using serve input/output
+    if args.serve_output or args.serve_input:
+        args.serve = True
 
     # Dev mode: extensive diagnostics before execution
     dev_report_header = ""
@@ -75,6 +80,22 @@ def main():
             print(f"{Colors.GREEN}[OK]{Colors.ENDC} Dry-run diagnostics saved to: {filename}")
         else:
             print(output)
+        return
+
+    # Serve from existing JSON file (no GitHub fetch)
+    if args.serve_input:
+        if not os.path.exists(args.serve_input):
+            print_styled(f"Error: JSON file not found: {args.serve_input}", Colors.RED)
+            sys.exit(1)
+        with open(args.serve_input, 'r', encoding='utf-8') as f:
+            data_json = f.read()
+        try:
+            get_static_dir()
+            start_server(data_json, port=args.port, open_browser=not args.no_open)
+        except FileNotFoundError as e:
+            print_styled(f"\nNote: {e}", Colors.WARNING)
+            print_styled("Starting fallback server with basic HTML...", Colors.CYAN)
+            start_fallback_server(data_json, port=args.port, open_browser=not args.no_open)
         return
 
     # Remove defaults_map and automatic limit logic
@@ -224,8 +245,17 @@ def main():
                 org=org,
             )
             
+            # Write served JSON to disk if requested
+            if args.serve_output:
+                output_path = args.serve_output
+                output_dir = os.path.dirname(output_path)
+                if output_dir and not os.path.exists(output_dir):
+                    os.makedirs(output_dir)
+                with open(output_path, 'w', encoding='utf-8') as f:
+                    f.write(data_json)
+                print_styled(f"{Colors.GREEN}[OK]{Colors.ENDC} Saved serve data: {output_path}")
+
             # Start server
-            from .server import start_server, start_fallback_server, get_static_dir
             try:
                 static_dir = get_static_dir()
                 start_server(data_json, port=args.port, open_browser=not args.no_open)
@@ -326,8 +356,17 @@ def main():
             portrait=portrait_data,
         )
         
+        # Write served JSON to disk if requested
+        if args.serve_output:
+            output_path = args.serve_output
+            output_dir = os.path.dirname(output_path)
+            if output_dir and not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+            with open(output_path, 'w', encoding='utf-8') as f:
+                f.write(data_json)
+            print_styled(f"{Colors.GREEN}[OK]{Colors.ENDC} Saved serve data: {output_path}")
+
         # Start server
-        from .server import start_server, start_fallback_server, get_static_dir
         try:
             static_dir = get_static_dir()
             start_server(data_json, port=args.port, open_browser=not args.no_open)

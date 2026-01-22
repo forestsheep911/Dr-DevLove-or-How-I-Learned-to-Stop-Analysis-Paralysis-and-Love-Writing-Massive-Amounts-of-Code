@@ -24,17 +24,36 @@ export function CommitChart({ timeline }: CommitChartProps) {
   return (
     <Card>
       <Title>提交趋势</Title>
-      <AreaChart
-        className="h-72 mt-4"
-        data={chartData}
-        index="date"
-        categories={["提交数", "新增行", "删除行"]}
-        colors={["blue", "green", "red"]}
-        valueFormatter={(value) => value.toLocaleString()}
-        showLegend={true}
-        showGridLines={true}
-        showAnimation={true}
-      />
+      <div className="mt-4 space-y-6">
+        <div>
+          <div className="text-sm text-gray-600 mb-2">提交数（单独刻度）</div>
+          <AreaChart
+            className="h-48"
+            data={chartData}
+            index="date"
+            categories={["提交数"]}
+            colors={["blue"]}
+            valueFormatter={(value) => value.toLocaleString()}
+            showLegend={false}
+            showGridLines={true}
+            showAnimation={true}
+          />
+        </div>
+        <div>
+          <div className="text-sm text-gray-600 mb-2">代码行变更（新增/删除）</div>
+          <AreaChart
+            className="h-48"
+            data={chartData}
+            index="date"
+            categories={["新增行", "删除行"]}
+            colors={["green", "red"]}
+            valueFormatter={(value) => value.toLocaleString()}
+            showLegend={true}
+            showGridLines={true}
+            showAnimation={true}
+          />
+        </div>
+      </div>
     </Card>
   );
 }

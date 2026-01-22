@@ -172,3 +172,6 @@ web/.env.*.local
 
 # Generated static files (copied from web/out/)
 src/gh_stats/static/
+
+# Editor settings
+.vscode/

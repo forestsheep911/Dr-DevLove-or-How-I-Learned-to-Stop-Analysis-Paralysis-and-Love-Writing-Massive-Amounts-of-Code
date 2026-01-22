@@ -22,12 +22,6 @@ class StaticHandler(http.server.SimpleHTTPRequestHandler):
         super().__init__(*args, directory=static_dir, **kwargs)
     
     def do_GET(self):
-        # 忽略 favicon 请求，避免 404 噪音
-        if self.path == '/favicon.ico' or self.path == '/favicon.ico/':
-            self.send_response(204)
-            self.end_headers()
-            return
-
         # 处理 /data.json 请求
         if self.path == '/data.json' or self.path == '/data.json/':
             self.send_response(200)

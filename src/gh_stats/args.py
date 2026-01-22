@@ -114,6 +114,8 @@ PARAM_ENTITY_MAP = {
     "serve": Entity.E_SERVE,
     "port": Entity.E_SERVE,
     "no_open": Entity.E_SERVE,
+    "serve_output": Entity.E_SERVE,
+    "serve_input": Entity.E_SERVE,
 }
 
 # 参数默认值表
@@ -140,7 +142,12 @@ PARAM_DEFAULTS = {
     "serve": False,
     "port": 8080,
     "no_open": False,
+    "serve_output": None,
+    "serve_input": None,
 }
+
+# 默认的 serve 数据路径
+DEFAULT_SERVE_DATA_PATH = "reports/serve-data.json"
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -174,6 +181,20 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument('--serve', action='store_true', help='Start a local web server to display stats with charts')
     parser.add_argument('--port', type=int, default=8080, help='Port for the web server (default: 8080)')
     parser.add_argument('--no-open', action='store_true', help='Do not automatically open browser when starting server')
+    parser.add_argument(
+        '--serve-output',
+        nargs='?',
+        const=DEFAULT_SERVE_DATA_PATH,
+        type=str,
+        help='Write served JSON data to a file (auto-enables --serve). Default: reports/serve-data.json',
+    )
+    parser.add_argument(
+        '--serve-input',
+        nargs='?',
+        const=DEFAULT_SERVE_DATA_PATH,
+        type=str,
+        help='Serve from a JSON file without fetching GitHub data (auto-enables --serve). Default: reports/serve-data.json',
+    )
     
     return parser
 
@@ -222,6 +243,14 @@ def parse_with_diagnostics(argv: Optional[List[str]] = None) -> Tuple[argparse.N
         args.arena = True
         if Entity.E_ARENA not in [e for e, _ in result.active_entities]:
             result.active_entities.append((Entity.E_ARENA, "--arena-top (derived)"))
+
+    # 推导规则 (D): --serve-output 或 --serve-input 自动激活 --serve
+    if (args.serve_output or args.serve_input) and not args.serve:
+        result.params["serve"].source = ValueSource.DERIVED
+        result.params["serve"].value = True
+        args.serve = True
+        if Entity.E_SERVE not in [e for e, _ in result.active_entities]:
+            result.active_entities.append((Entity.E_SERVE, "--serve-output/--serve-input (derived)"))
     
     # 互斥约束检查 (X): --org-summary 与 --orgs
     orgs = [o.strip() for o in args.orgs.split(',') if o.strip()]
